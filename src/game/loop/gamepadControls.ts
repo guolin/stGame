@@ -12,6 +12,30 @@ export function gamepadAxisToRudder(axisValue: number | undefined) {
   return Math.max(-1, Math.min(1, axisValue * GAMEPAD_STEERING_SENSITIVITY));
 }
 
+// Per the "Sailing Tactics Rudder" firmware spec, buttons 3-10 (buttons[2..9])
+// are digital left/right nudge commands for a rudder channel with no analog
+// Chain Angle module attached: Q/E -> R1 (channel 0), I/P -> R2 (channel 1),
+// Z/C -> R3 (channel 2), B/M -> R4 (channel 3). These live on the shared
+// 4-channel device (connected[0]), the same one the analog fallback reads.
+const DIGITAL_RUDDER_BUTTONS: Record<number, { left: number; right: number }> = {
+  0: { left: 2, right: 3 },
+  1: { left: 4, right: 5 },
+  2: { left: 6, right: 7 },
+  3: { left: 8, right: 9 }
+};
+
+/** Pure so it can be unit-tested without a real Gamepad object. */
+export function resolveDigitalRudderOverride(
+  pad: { buttons: readonly { pressed: boolean }[] } | undefined,
+  channel: number
+): number {
+  const mapping = DIGITAL_RUDDER_BUTTONS[channel];
+  if (!mapping || !pad) return 0;
+  const left = Boolean(pad.buttons[mapping.left]?.pressed);
+  const right = Boolean(pad.buttons[mapping.right]?.pressed);
+  return (right ? 1 : 0) - (left ? 1 : 0);
+}
+
 export function useGamepadControls() {
   const setControl = useGameStore((state) => state.setControl);
   const activeBoatIds = useGameStore((state) => state.activeBoatIds);
@@ -27,7 +51,9 @@ export function useGamepadControls() {
       activeBoatIds.forEach((boatId, index) => {
         const channel = BOAT_ORDER.indexOf(boatId);
         const gamepad = connected[index];
-        const rudder = gamepadAxisToRudder(gamepad?.axes[STEERING_AXIS] ?? connected[0]?.axes[channel]);
+        const digital = resolveDigitalRudderOverride(connected[0], channel);
+        const rudder =
+          digital !== 0 ? digital : gamepadAxisToRudder(gamepad?.axes[STEERING_AXIS] ?? connected[0]?.axes[channel]);
 
         if (rudder !== lastRudderRef.current[boatId]) {
           lastRudderRef.current = { ...lastRudderRef.current, [boatId]: rudder };
