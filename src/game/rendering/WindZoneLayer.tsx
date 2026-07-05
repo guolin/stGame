@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import type { Graphics as PixiGraphics } from "pixi.js";
 import type { WindZoneState } from "../types";
+import { THEME } from "../theme";
 import { GraphicsShape } from "./GraphicsShape";
 
 type WindZoneLayerProps = {
@@ -23,11 +24,11 @@ export function WindZoneLayer({ zones }: WindZoneLayerProps) {
           const offset = Math.sin(zone.phase + row * 0.01) * 34;
           graphics.moveTo(x + 40 + offset, row);
           graphics.lineTo(x + width - 40 + offset, row + Math.sin(zone.phase + row * 0.02) * 24);
-          graphics.stroke({
-            color: zone.speedDeltaKnots >= 0 ? "#d9fbff" : "#7ed8ff",
-            alpha: zone.speedDeltaKnots >= 0 ? 0.16 : 0.09,
-            width: zone.speedDeltaKnots >= 0 ? 5 : 3
-          });
+          graphics.stroke(
+            zone.speedDeltaKnots >= 0
+              ? { color: THEME.windZone.ripplePositiveColor, alpha: THEME.windZone.ripplePositiveAlpha, width: THEME.windZone.ripplePositiveWidth }
+              : { color: THEME.windZone.rippleNegativeColor, alpha: THEME.windZone.rippleNegativeAlpha, width: THEME.windZone.rippleNegativeWidth }
+          );
         }
       });
     },

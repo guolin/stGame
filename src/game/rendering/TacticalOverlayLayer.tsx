@@ -4,6 +4,7 @@ import type { BoatState, OverlaySettings, Vec2, WindState } from "../types";
 import type { CourseDefinition } from "../../sim/course/types";
 import { currentTarget } from "../../sim/course/progress";
 import { headingToVector, normalizeDeg } from "../utils/math";
+import { THEME } from "../theme";
 import { GraphicsShape } from "./GraphicsShape";
 
 type TacticalOverlayLayerProps = {
@@ -21,7 +22,7 @@ export function TacticalOverlayLayer({ boats, overlays, wind, course }: Tactical
         if (overlays.tracks && boat.track.length > 1) {
           graphics.moveTo(boat.track[0].x, boat.track[0].y);
           boat.track.slice(1).forEach((point) => graphics.lineTo(point.x, point.y));
-          graphics.stroke({ color: boat.color, alpha: 0.58, width: 3 });
+          graphics.stroke({ color: boat.color, alpha: THEME.tactical.trackAlpha, width: THEME.tactical.trackWidth });
         }
 
         if (overlays.laylines) {
@@ -46,12 +47,12 @@ function drawLayline(graphics: PixiGraphics, boat: BoatState, deg: number, markP
   const vector = headingToVector(normalizeDeg(deg));
   graphics.moveTo(boat.position.x, boat.position.y);
   graphics.lineTo(boat.position.x + vector.x * 720, boat.position.y + vector.y * 720);
-  graphics.stroke({ color: boat.color, alpha: 0.3, width: 2 });
+  graphics.stroke({ color: boat.color, alpha: THEME.tactical.laylineAlpha, width: THEME.tactical.laylineWidth });
 
   if (markPosition) {
     graphics.moveTo(markPosition.x, markPosition.y);
     graphics.lineTo(markPosition.x - vector.x * 720, markPosition.y - vector.y * 720);
-    graphics.stroke({ color: "#ffe08a", alpha: 0.22, width: 2 });
+    graphics.stroke({ color: THEME.tactical.laylineMarkColor, alpha: THEME.tactical.laylineMarkAlpha, width: THEME.tactical.laylineMarkWidth });
   }
 }
 
@@ -64,5 +65,5 @@ function drawNoGoZone(graphics: PixiGraphics, boat: BoatState, windDirection: nu
   graphics.lineTo(boat.position.x + left.x * radius, boat.position.y + left.y * radius);
   graphics.arc(boat.position.x, boat.position.y, radius, Math.atan2(left.y, left.x), Math.atan2(right.y, right.x));
   graphics.lineTo(boat.position.x, boat.position.y);
-  graphics.fill({ color: "#ffffff", alpha: 0.08 });
+  graphics.fill({ color: THEME.tactical.noGoFillColor, alpha: THEME.tactical.noGoFillAlpha });
 }

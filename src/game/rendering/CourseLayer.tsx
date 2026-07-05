@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import type { Graphics as PixiGraphics } from "pixi.js";
 import type { CourseDefinition } from "../../sim/course/types";
+import { THEME } from "../theme";
 import { GraphicsShape } from "./GraphicsShape";
 
 type CourseLayerProps = {
@@ -15,20 +16,31 @@ export function CourseLayer({ course }: CourseLayerProps) {
       const { startLine, finishLine } = course;
       graphics.moveTo(startLine.left.x, startLine.left.y);
       graphics.lineTo(startLine.right.x, startLine.right.y);
-      graphics.stroke({ color: "#ffffff", alpha: 0.95, width: 4 });
-      graphics.circle(startLine.left.x, startLine.left.y, 20).fill("#f4fbff").stroke({ color: "#a9d4e6", width: 3 });
-      graphics.circle(startLine.right.x, startLine.right.y, 20).fill("#f4fbff").stroke({ color: "#a9d4e6", width: 3 });
+      graphics.stroke({ color: THEME.course.startLineColor, alpha: THEME.course.startLineAlpha, width: THEME.course.startLineWidth });
+      graphics
+        .circle(startLine.left.x, startLine.left.y, 20)
+        .fill(THEME.course.startMarkFillColor)
+        .stroke({ color: THEME.course.startMarkStrokeColor, width: THEME.course.startMarkStrokeWidth });
+      graphics
+        .circle(startLine.right.x, startLine.right.y, 20)
+        .fill(THEME.course.startMarkFillColor)
+        .stroke({ color: THEME.course.startMarkStrokeColor, width: THEME.course.startMarkStrokeWidth });
 
       if (finishLine !== startLine) {
         graphics.moveTo(finishLine.left.x, finishLine.left.y);
         graphics.lineTo(finishLine.right.x, finishLine.right.y);
-        graphics.stroke({ color: "#9ff0c0", alpha: 0.9, width: 4 });
+        graphics.stroke({ color: THEME.course.finishLineColor, alpha: THEME.course.finishLineAlpha, width: THEME.course.finishLineWidth });
       }
 
       for (const mark of course.marks) {
-        graphics.circle(mark.position.x, mark.position.y, 56).stroke({ color: "#ffd36e", alpha: 0.86, width: 3 });
-        graphics.circle(mark.position.x, mark.position.y, 23).fill("#ff8a18").stroke({ color: "#c94e08", width: 5 });
-        graphics.circle(mark.position.x, mark.position.y - 16, 11).fill("#ffbb4d");
+        graphics
+          .circle(mark.position.x, mark.position.y, 56)
+          .stroke({ color: THEME.course.markRingColor, alpha: THEME.course.markRingAlpha, width: THEME.course.markRingWidth });
+        graphics
+          .circle(mark.position.x, mark.position.y, 23)
+          .fill(THEME.course.markCoreFillColor)
+          .stroke({ color: THEME.course.markCoreStrokeColor, width: THEME.course.markCoreStrokeWidth });
+        graphics.circle(mark.position.x, mark.position.y - 16, 11).fill(THEME.course.markGlintColor);
       }
     },
     [course]
@@ -43,7 +55,7 @@ export function CourseLayer({ course }: CourseLayerProps) {
           text={mark.label}
           x={mark.position.x + 38}
           y={mark.position.y + 24}
-          style={{ fill: "#ffffff", fontFamily: "Arial", fontSize: 26, fontWeight: "700" }}
+          style={{ fill: THEME.course.labelColor, fontFamily: THEME.text.fontFamily, fontSize: THEME.course.labelFontSize, fontWeight: "700" }}
         />
       ))}
     </pixiContainer>

@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import type { Graphics as PixiGraphics } from "pixi.js";
 import type { WindState } from "../types";
 import { WORLD } from "../constants";
+import { THEME } from "../theme";
 import { headingToVector } from "../utils/math";
 import { GraphicsShape } from "./GraphicsShape";
 
@@ -20,7 +21,16 @@ export function WindLayer({ wind, visible }: WindLayerProps) {
       const vector = headingToVector(wind.directionDeg + 180);
       for (let y = 150; y < WORLD.height - 120; y += 190) {
         for (let x = 160; x < WORLD.width - 130; x += 260) {
-          drawArrow(graphics, x, y, vector.x * 74, vector.y * 74, "#c5f6ff", 0.34, 7);
+          drawArrow(
+            graphics,
+            x,
+            y,
+            vector.x * THEME.wind.arrowLength,
+            vector.y * THEME.wind.arrowLength,
+            THEME.wind.arrowColor,
+            THEME.wind.arrowAlpha,
+            THEME.wind.arrowWidth
+          );
         }
       }
     },
