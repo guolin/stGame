@@ -5,41 +5,31 @@ import { GraphicsShape } from "../../game/rendering/GraphicsShape";
 
 type LadderLayerProps = {
   windDeg: number;
-  mark: Vec2;
+  boats: { position: Vec2; color: string }[];
 };
 
-const RUNG_SPACING = 180;
-const RUNG_HALF_LENGTH = 1900;
-const RUNGS_DOWNWIND = 10;
-const RUNGS_UPWIND = 2;
+const RUNG_HALF_LENGTH = 1100;
 
 /**
- * Ladder rungs: evenly spaced lines perpendicular to the wind, anchored at
- * the mark. They rotate with every shift — the visual proof that a shift
- * re-ranks boats that were previously level.
+ * One ladder rung per boat: a line through the hull, perpendicular to the
+ * wind. The gap between the two lines IS the lead — no line forest to
+ * decode, and both rungs rotate together when the wind shifts.
  */
-export function LadderLayer({ windDeg, mark }: LadderLayerProps) {
+export function LadderLayer({ windDeg, boats }: LadderLayerProps) {
   const draw = useCallback(
     (graphics: PixiGraphics) => {
       graphics.clear();
       const rad = (windDeg * Math.PI) / 180;
-      // Upwind unit vector (toward the wind source) and the rung direction.
-      const up = { x: Math.sin(rad), y: -Math.cos(rad) };
       const along = { x: Math.cos(rad), y: Math.sin(rad) };
 
-      for (let k = -RUNGS_UPWIND; k <= RUNGS_DOWNWIND; k += 1) {
-        const cx = mark.x - up.x * k * RUNG_SPACING;
-        const cy = mark.y - up.y * k * RUNG_SPACING;
-        graphics.moveTo(cx - along.x * RUNG_HALF_LENGTH, cy - along.y * RUNG_HALF_LENGTH);
-        graphics.lineTo(cx + along.x * RUNG_HALF_LENGTH, cy + along.y * RUNG_HALF_LENGTH);
-        graphics.stroke({
-          color: "#c9f2ff",
-          alpha: k === 0 ? 0.65 : 0.3,
-          width: k === 0 ? 4 : 3
-        });
-      }
+      boats.forEach((boat) => {
+        const { x, y } = boat.position;
+        graphics.moveTo(x - along.x * RUNG_HALF_LENGTH, y - along.y * RUNG_HALF_LENGTH);
+        graphics.lineTo(x + along.x * RUNG_HALF_LENGTH, y + along.y * RUNG_HALF_LENGTH);
+        graphics.stroke({ color: boat.color, alpha: 0.55, width: 4 });
+      });
     },
-    [windDeg, mark]
+    [windDeg, boats]
   );
 
   return <GraphicsShape draw={draw} />;

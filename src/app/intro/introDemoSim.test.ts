@@ -3,13 +3,18 @@ import {
   DEMO_BASE_WIND_DEG,
   DEMO_FIRST_SHIFT_DEG,
   DEMO_MARK,
+  ZONE_DEMO_ZONES,
   advanceIntroDemoMode,
+  boatSpeedKnots,
   chooseAdaptiveTack,
   chooseCornerTack,
   createIntroDemoState,
+  createZoneDemoState,
   demoWindOscDeg,
   leadMeters,
-  stepIntroDemo
+  localWindAt,
+  stepIntroDemo,
+  stepZoneDemo
 } from "./introDemoSim";
 
 describe("demoWindOscDeg", () => {
@@ -18,45 +23,26 @@ describe("demoWindOscDeg", () => {
     expect(demoWindOscDeg("split", 30)).toBe(0);
   });
 
-  it("ramps right during the first shift and caps at the target", () => {
+  it("ramps right during the shift, caps at the target and stays there", () => {
     expect(demoWindOscDeg("shift", 0)).toBe(0);
     expect(demoWindOscDeg("shift", 2)).toBeGreaterThan(0);
+    expect(demoWindOscDeg("shift", 60)).toBe(DEMO_FIRST_SHIFT_DEG);
     expect(demoWindOscDeg("shift", 500)).toBe(DEMO_FIRST_SHIFT_DEG);
-  });
-
-  it("starts the pendulum exactly at the first-shift angle (no jump)", () => {
-    expect(demoWindOscDeg("pendulum", 0)).toBeCloseTo(DEMO_FIRST_SHIFT_DEG, 6);
-  });
-
-  it("swings back left after the pendulum starts", () => {
-    const early = demoWindOscDeg("pendulum", 1);
-    expect(early).toBeLessThan(DEMO_FIRST_SHIFT_DEG);
-    // and it eventually crosses to the left of the base direction
-    const angles = Array.from({ length: 400 }, (_, i) => demoWindOscDeg("pendulum", i * 0.1));
-    expect(Math.min(...angles)).toBeLessThan(0);
   });
 });
 
-describe("mode transitions keep the wind continuous", () => {
-  it("split → shift → pendulum has no discontinuity at either boundary", () => {
+describe("mode transition keeps the wind continuous", () => {
+  it("split → shift starts the ramp from the base direction", () => {
     let state = createIntroDemoState();
     state = stepIntroDemo(state, 4);
     expect(state.windDeg).toBeCloseTo(DEMO_BASE_WIND_DEG, 6);
 
     state = advanceIntroDemoMode(state);
     expect(state.mode).toBe("shift");
-    const beforeRamp = state.windDeg;
-    expect(beforeRamp).toBeCloseTo(DEMO_BASE_WIND_DEG, 6);
+    expect(state.windDeg).toBeCloseTo(DEMO_BASE_WIND_DEG, 6);
 
-    // run the ramp to completion
-    for (let i = 0; i < 20 * 60; i += 1) state = stepIntroDemo(state, 1 / 60);
-    expect(state.windOscDeg).toBeCloseTo(DEMO_FIRST_SHIFT_DEG, 3);
-
-    state = advanceIntroDemoMode(state);
-    expect(state.mode).toBe("pendulum");
-    const atSwitch = state.windOscDeg;
     state = stepIntroDemo(state, 1 / 60);
-    expect(Math.abs(state.windOscDeg - atSwitch)).toBeLessThan(1);
+    expect(Math.abs(state.windOscDeg)).toBeLessThan(1);
   });
 });
 
@@ -100,8 +86,8 @@ describe("leadMeters", () => {
   });
 });
 
-describe("full demo integration", () => {
-  it("red beats blue to the mark by playing the shifts", () => {
+describe("shift demo integration", () => {
+  it("red beats blue to the mark by playing the single shift", () => {
     let state = createIntroDemoState();
     const dt = 1 / 60;
 
@@ -109,17 +95,36 @@ describe("full demo integration", () => {
     for (let i = 0; i < 6 * 60; i += 1) state = stepIntroDemo(state, dt);
     expect(state.red.motion.position.x).toBeGreaterThan(state.blue.motion.position.x);
 
-    // First shift.
+    // Single persistent shift, then sail it out to the mark.
     state = advanceIntroDemoMode(state);
-    for (let i = 0; i < 12 * 60; i += 1) state = stepIntroDemo(state, dt);
-    const leadAfterFirstShift = leadMeters(state.red.motion.position, state.blue.motion.position);
-    expect(leadAfterFirstShift).toBeGreaterThan(0);
-
-    // Pendulum until red reaches the mark (bounded).
-    state = advanceIntroDemoMode(state);
-    for (let i = 0; i < 90 * 60 && !state.finished; i += 1) state = stepIntroDemo(state, dt);
+    for (let i = 0; i < 120 * 60 && !state.finished; i += 1) state = stepIntroDemo(state, dt);
 
     expect(state.finished).toBe(true);
-    expect(leadMeters(state.red.motion.position, state.blue.motion.position)).toBeGreaterThan(leadAfterFirstShift);
+    expect(leadMeters(state.red.motion.position, state.blue.motion.position)).toBeGreaterThan(15);
+  });
+});
+
+describe("zone demo integration", () => {
+  it("the strong zone is stronger and lifted, the soft patch is soft", () => {
+    const strong = localWindAt(ZONE_DEMO_ZONES, { x: 1960, y: 900 });
+    const soft = localWindAt(ZONE_DEMO_ZONES, { x: 740, y: 900 });
+    expect(strong.speedKnots).toBeGreaterThan(14);
+    expect(soft.speedKnots).toBeLessThan(8);
+  });
+
+  it("red's planned route through the strong zone wins clearly", () => {
+    let state = createZoneDemoState();
+    const dt = 1 / 60;
+
+    let sampledSpeedGap = 0;
+    for (let i = 0; i < 120 * 60 && !state.finished; i += 1) {
+      state = stepZoneDemo(state, dt);
+      if (i === 8 * 60) sampledSpeedGap = boatSpeedKnots(state.red) - boatSpeedKnots(state.blue);
+    }
+
+    expect(state.finished).toBe(true);
+    // Mid-race red should be visibly faster, and the finish gap should be big.
+    expect(sampledSpeedGap).toBeGreaterThan(1);
+    expect(leadMeters(state.red.motion.position, state.blue.motion.position)).toBeGreaterThan(12);
   });
 });

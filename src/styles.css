@@ -1201,9 +1201,9 @@ input {
 }
 
 .intro-slide h1 {
-  margin: 0;
-  max-width: 760px;
-  font-size: 56px;
+  margin: 0 0 10px;
+  max-width: 900px;
+  font-size: 76px;
   line-height: 1.06;
 }
 
@@ -1266,7 +1266,7 @@ input {
 /* ---------- intro stage demo ---------- */
 
 .intro-brand {
-  font-size: 92px;
+  font-size: 128px;
   letter-spacing: 0.02em;
   color: #ffe082;
 }
@@ -1381,4 +1381,151 @@ input {
 .rudder-gauge-label strong {
   color: #ffe082;
   font-variant-numeric: tabular-nums;
+}
+
+/* ---------- intro pager & rich text slides ---------- */
+
+.intro-pager {
+  margin-top: 30px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  pointer-events: auto;
+}
+
+.intro-pager > button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(159, 210, 232, 0.55);
+  background: rgba(4, 22, 36, 0.6);
+  color: #dff7ff;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.intro-pager > button:hover:not(:disabled) {
+  border-color: #ffe082;
+  color: #ffe082;
+}
+
+.intro-pager > button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.intro-pager .intro-dots {
+  margin-top: 0;
+}
+
+.intro-pager .intro-exit {
+  width: auto;
+  border-radius: 999px;
+  padding: 0 16px;
+  font-size: 15px;
+}
+
+.intro-slide .intro-body {
+  margin: 4px 0;
+}
+
+.intro-illust {
+  width: 320px;
+  margin-top: 18px;
+}
+
+.intro-bubbles {
+  margin-top: 18px;
+  display: grid;
+  gap: 12px;
+  max-width: 520px;
+}
+
+.bubble {
+  padding: 14px 20px;
+  border-radius: 18px;
+  font-size: 22px;
+  line-height: 1.4;
+  width: fit-content;
+}
+
+.bubble-coach {
+  background: #ffe082;
+  color: #06243a;
+  border-bottom-left-radius: 4px;
+}
+
+.bubble-student {
+  background: rgba(159, 210, 232, 0.2);
+  color: #dff7ff;
+  border: 1px solid rgba(159, 210, 232, 0.5);
+  border-bottom-right-radius: 4px;
+  margin-left: 46px;
+}
+
+.feature-row {
+  margin-top: 10px;
+  display: flex;
+  gap: 18px;
+  max-width: 980px;
+}
+
+.feature {
+  flex: 1;
+  padding: 20px 22px;
+  border-radius: 16px;
+  background: rgba(4, 22, 36, 0.72);
+  border: 1px solid rgba(159, 210, 232, 0.35);
+}
+
+.feature-icon {
+  width: 44px;
+  height: 44px;
+  color: #ffe082;
+}
+
+.feature h3 {
+  margin: 10px 0 8px;
+  font-size: 24px;
+}
+
+.feature p {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.5;
+  color: #cfeafa;
+}
+
+.intro-note {
+  margin: 18px 0 0;
+  font-size: 18px;
+  color: #9fd2e8;
+  letter-spacing: 0.08em;
+}
+
+.hud-chip-blue {
+  border-color: #1597ff;
+  color: #a8d6ff;
+}
+
+.intro-home-btn {
+  position: absolute;
+  left: 50%;
+  bottom: 110px;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  padding: 14px 44px;
+  border-radius: 999px;
+  border: 2px solid #ffe082;
+  background: rgba(4, 22, 36, 0.8);
+  color: #ffe082;
+  font-size: 22px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.intro-home-btn:hover {
+  background: #ffe082;
+  color: #06243a;
 }
