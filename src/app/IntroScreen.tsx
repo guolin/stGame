@@ -1,78 +1,60 @@
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
-import type { BoatState, OverlaySettings, WindState } from "../game/types";
+import type { BoatState, OverlaySettings, Vec2, WindState } from "../game/types";
 import type { CourseDefinition } from "../sim/course/types";
 import { BoatSprite } from "../game/rendering/BoatSprite";
 import { CourseLayer } from "../game/rendering/CourseLayer";
 import { TacticalOverlayLayer } from "../game/rendering/TacticalOverlayLayer";
 import { WaterLayer } from "../game/rendering/WaterLayer";
 import { WindLayer } from "../game/rendering/WindLayer";
-import { WindZoneLayer } from "../game/rendering/WindZoneLayer";
 import type { BoatMotionState } from "../sim/boat/boatPhysics";
-import { createBoatMotionState, stepBoatPhysics } from "../sim/boat/boatPhysics";
+import { createBoatMotionState } from "../sim/boat/boatPhysics";
 import { PIXELS_PER_KNOT } from "../sim/boat/units";
 import { LessonStage } from "../lessons/LessonStage";
 import { useFixedStepLoop } from "../lessons/useFixedStepLoop";
 import { useGameStore } from "../store/gameStore";
 import { LadderLayer } from "./intro/LadderLayer";
 import { RudderGauge } from "./intro/RudderGauge";
-import type { DemoBoat, IntroDemoState, ZoneDemoState } from "./intro/introDemoSim";
+import type { DemoBoat, DuelState, RaceRecording } from "./intro/introDemoSim";
 import {
   DEMO_MARK,
   DEMO_START_Y,
+  DEMO_TIME_SCALE,
   DEMO_WIND_SPEED_KNOTS,
-  boatSpeedKnots,
   chooseCornerTack,
-  createIntroDemoState,
-  createZoneDemoState,
+  createDuelState,
   leadMeters,
+  recordIntroRace,
+  speedKnotsOf,
   stepDemoBoat,
-  stepIntroDemo,
-  stepZoneDemo
+  stepDuel
 } from "./intro/introDemoSim";
 
 type Slide =
   | { kind: "text"; title: string; brand?: boolean; body: string[]; extra?: ReactNode }
-  | { kind: "shift" | "zones"; corner: string; line: string }
-  | { kind: "live"; corner: string; line: string };
+  | { kind: "dark" | "replay" | "duel"; corner: string; line: string };
 
 const SLIDES: Slide[] = [
   {
     kind: "text",
     brand: true,
     title: "Sailing Tactics",
-    body: ["把看不见的风，画到屏幕上", "一个帆船战术训练器 · 3 分钟看明白"]
+    body: ["把看不见的风，画到屏幕上"]
   },
   {
-    kind: "text",
-    title: "跑得最快，不一定赢",
-    body: [
-      "帆船是靠风走的。但风看不见，还每隔几分钟就摆一次方向——这叫「风摆」。",
-      "两条船，一条猜对了风往哪摆，一条猜错了，一下就差出几百米。",
-      "所以帆船比的不是速度，是读风——像下围棋，棋盘还一直在变。"
-    ],
-    extra: <RaceSketch />
+    kind: "dark",
+    corner: "谁先到 1 标谁赢",
+    line: "红船、蓝船：同样的船，同样的速度。"
   },
   {
-    kind: "text",
-    title: "风看不见，教起来很难",
-    body: ["在海上，教练只能靠喊。学员练一整天，真正搞明白的没几次。"],
-    extra: (
-      <div className="intro-bubbles">
-        <div className="bubble bubble-coach">教练：“风摆了！快转！”</div>
-        <div className="bubble bubble-student">学员：“啊？哪摆了？我什么都没看见……”</div>
-      </div>
-    )
+    kind: "replay",
+    corner: "同一场比赛，把风画出来",
+    line: "一帧都没改——只是把看不见的东西画了出来。"
   },
   {
-    kind: "shift",
-    corner: "看懂风摆",
-    line: "两船分边去 1 标。风从 355° 一路摆到 15°——同样的船，站对边就是先到。"
-  },
-  {
-    kind: "zones",
-    corner: "会挑风区",
-    line: "风不是处处一样。红船的路线吃住强风顺角区，蓝船一头扎进弱风区。"
+    kind: "duel",
+    corner: "现在我下场",
+    line: "红船我来开，蓝船还是刚才那个 AI。"
   },
   {
     kind: "text",
@@ -84,7 +66,7 @@ const SLIDES: Slide[] = [
           <div className="feature">
             <EyeIcon />
             <h3>看见风</h3>
-            <p>风向、风力、风摆、风区，全画在屏幕上，一眼就懂。</p>
+            <p>风向、风力、风摆，全画在屏幕上，一眼就懂。</p>
           </div>
           <div className="feature">
             <TillerIcon />
@@ -94,7 +76,7 @@ const SLIDES: Slide[] = [
           <div className="feature">
             <CheckIcon />
             <h3>立刻知道对不对</h3>
-            <p>航迹、等高线、领先米数，每个决定当场见分晓。</p>
+            <p>航迹、等高线、到标时间差，每个决定当场见分晓。</p>
           </div>
         </div>
         <p className="intro-note">接下来：绕标 · 起航 · 多人对战</p>
@@ -102,15 +84,15 @@ const SLIDES: Slide[] = [
     )
   },
   {
-    kind: "live",
-    corner: "看得见，也练得会",
-    line: "先在这里练懂风，再去海上，真的知道该怎么走。"
+    kind: "text",
+    title: "看得见，也练得会",
+    body: ["先在这里练懂风，再去海上，真的知道该怎么走。"]
   }
 ];
 
-const SHIFT_SLIDE = 3;
-const ZONE_SLIDE = 4;
-const LIVE_SLIDE = 6;
+const DARK_SLIDE = 1;
+const REPLAY_SLIDE = 2;
+const DUEL_SLIDE = 3;
 
 const DEMO_COURSE: CourseDefinition = (() => {
   const startLine = { left: { x: 1000, y: DEMO_START_Y }, right: { x: 1800, y: DEMO_START_Y } };
@@ -127,16 +109,7 @@ const DEMO_COURSE: CourseDefinition = (() => {
   };
 })();
 
-const DEMO_OVERLAYS: OverlaySettings = { wind: false, tracks: true, laylines: false, noGoZone: false };
-
-type LiveBoat = { motion: BoatMotionState; track: { x: number; y: number }[] };
-
-function createLiveBoat(): LiveBoat {
-  return {
-    motion: createBoatMotionState({ position: { x: 1400, y: 1150 }, headingDeg: 20, speed: 3.2 * PIXELS_PER_KNOT }),
-    track: []
-  };
-}
+const DEMO_OVERLAYS: OverlaySettings = { wind: false, current: false, tracks: true, laylines: false, noGoZone: false };
 
 function createAmbientBoat(x: number, y: number, headingDeg: number, tackHeld: "port" | "starboard"): DemoBoat {
   return {
@@ -151,11 +124,13 @@ export function IntroScreen() {
   const [slide, setSlide] = useState(0);
   const [frame, setFrame] = useState(0);
 
-  const shiftRef = useRef<IntroDemoState>(createIntroDemoState());
-  const zoneRef = useRef<ZoneDemoState>(createZoneDemoState());
-  const liveRef = useRef<LiveBoat>(createLiveBoat());
-  const liveRudderRef = useRef(0);
-  const liveTimeRef = useRef(0);
+  const recordingRef = useRef<RaceRecording | null>(null);
+  if (!recordingRef.current) recordingRef.current = recordIntroRace();
+  const recording = recordingRef.current;
+
+  const playheadRef = useRef(0);
+  const duelRef = useRef<DuelState>(createDuelState());
+  const duelRudderRef = useRef(0);
   const ambientRef = useRef<{ boats: DemoBoat[]; timeSec: number }>({
     boats: [createAmbientBoat(700, 1500, 45, "port"), createAmbientBoat(2100, 1350, 315, "starboard")],
     timeSec: 0
@@ -165,39 +140,19 @@ export function IntroScreen() {
 
   useFixedStepLoop(() => {
     const dt = 1 / 60;
-    if (current.kind === "shift") {
-      shiftRef.current = stepIntroDemo(shiftRef.current, dt);
-    } else if (current.kind === "zones") {
-      zoneRef.current = stepZoneDemo(zoneRef.current, dt);
-    } else if (current.kind === "live") {
-      liveTimeRef.current += dt;
-      const boat = liveRef.current;
-      const motion = stepBoatPhysics({
-        motion: boat.motion,
-        rudder: liveRudderRef.current,
-        boatType: "op",
-        wind: { directionDeg: liveWindDeg(liveTimeRef.current), speedKnots: DEMO_WIND_SPEED_KNOTS },
-        penaltyFactor: 1,
-        dt
-      });
-      motion.position.x = Math.min(2740, Math.max(60, motion.position.x));
-      motion.position.y = Math.min(1740, Math.max(60, motion.position.y));
-      const last = boat.track[boat.track.length - 1];
-      if (!last || Math.hypot(motion.position.x - last.x, motion.position.y - last.y) > 24) {
-        boat.track.push({ ...motion.position });
-        if (boat.track.length > 500) boat.track.shift();
-      }
-      liveRef.current = { motion, track: boat.track };
+    if (current.kind === "dark" || current.kind === "replay") {
+      playheadRef.current = Math.min(playheadRef.current + DEMO_TIME_SCALE, recording.frames.length - 1);
+    } else if (current.kind === "duel") {
+      duelRef.current = stepDuel(duelRef.current, duelRudderRef.current, dt);
     } else {
       const ambient = ambientRef.current;
       ambient.timeSec += dt;
-      const wind = { directionDeg: ambientWindDeg(ambient.timeSec), speedKnots: DEMO_WIND_SPEED_KNOTS };
+      const wind = { directionDeg: 8 * Math.sin(ambient.timeSec / 6), speedKnots: DEMO_WIND_SPEED_KNOTS };
       ambient.boats = ambient.boats.map((boat, index) => {
         if (boat.motion.position.y < 160) {
           return createAmbientBoat(index === 0 ? 600 : 2200, 1650, index === 0 ? 45 : 315, index === 0 ? "port" : "starboard");
         }
-        const tack = chooseCornerTack(boat.motion.position.x, boat.tackHeld);
-        return stepDemoBoat(boat, tack, wind, dt);
+        return stepDemoBoat(boat, chooseCornerTack(boat.motion.position.x, boat.tackHeld), wind, dt);
       });
     }
     setFrame((value) => value + 1);
@@ -206,50 +161,46 @@ export function IntroScreen() {
 
   const goTo = (index: number) => {
     if (index < 0 || index >= SLIDES.length) return;
-    if (index === SHIFT_SLIDE) shiftRef.current = createIntroDemoState();
-    if (index === ZONE_SLIDE) zoneRef.current = createZoneDemoState();
-    if (index === LIVE_SLIDE) {
-      liveRef.current = createLiveBoat();
-      liveRudderRef.current = 0;
+    if (index === DARK_SLIDE || index === REPLAY_SLIDE) playheadRef.current = 0;
+    if (index === DUEL_SLIDE) {
+      duelRef.current = createDuelState();
+      duelRudderRef.current = 0;
     }
     setSlide(index);
   };
 
-  const next = () => {
-    goTo(slide + 1);
-  };
-
   const resetScenario = () => {
-    if (slide === SHIFT_SLIDE) shiftRef.current = createIntroDemoState();
-    if (slide === ZONE_SLIDE) zoneRef.current = createZoneDemoState();
-    if (slide === LIVE_SLIDE) {
-      liveRef.current = createLiveBoat();
-      liveRudderRef.current = 0;
+    if (slide === DARK_SLIDE || slide === REPLAY_SLIDE) playheadRef.current = 0;
+    if (slide === DUEL_SLIDE) {
+      duelRef.current = createDuelState();
+      duelRudderRef.current = 0;
     }
   };
 
-  const actionsRef = useRef({ next, resetScenario, goTo, slide });
-  actionsRef.current = { next, resetScenario, goTo, slide };
+  const actionsRef = useRef({ goTo, resetScenario, slide });
+  actionsRef.current = { goTo, resetScenario, slide };
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.code === "Space" || event.code === "ArrowRight") {
         event.preventDefault();
-        actionsRef.current.next();
+        actionsRef.current.goTo(actionsRef.current.slide + 1);
       } else if (event.code === "ArrowLeft") {
         event.preventDefault();
         actionsRef.current.goTo(actionsRef.current.slide - 1);
       } else if (event.code === "KeyR") {
         actionsRef.current.resetScenario();
+      } else if (event.code === "KeyP") {
+        duelRef.current = { ...duelRef.current, autopilot: !duelRef.current.autopilot };
       } else if (event.code === "KeyA") {
-        liveRudderRef.current = -1;
+        duelRudderRef.current = -1;
       } else if (event.code === "KeyD") {
-        liveRudderRef.current = 1;
+        duelRudderRef.current = 1;
       }
     };
     const handleKeyUp = (event: KeyboardEvent) => {
-      if (event.code === "KeyA" && liveRudderRef.current < 0) liveRudderRef.current = 0;
-      if (event.code === "KeyD" && liveRudderRef.current > 0) liveRudderRef.current = 0;
+      if (event.code === "KeyA" && duelRudderRef.current < 0) duelRudderRef.current = 0;
+      if (event.code === "KeyD" && duelRudderRef.current > 0) duelRudderRef.current = 0;
     };
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
@@ -275,32 +226,32 @@ export function IntroScreen() {
           />
         ))}
       </div>
-      <button type="button" onClick={next} disabled={slide === SLIDES.length - 1} aria-label="下一页">
+      <button type="button" onClick={() => goTo(slide + 1)} disabled={slide === SLIDES.length - 1} aria-label="下一页">
         ›
       </button>
       <button type="button" className="intro-exit" onClick={() => setView("home")}>
-        退出
+        {slide === SLIDES.length - 1 ? "返回首页" : "退出"}
       </button>
     </div>
   );
 
   if (current.kind === "text") {
     const ambientWind: WindState = {
-      directionDeg: ambientWindDeg(ambientRef.current.timeSec),
+      directionDeg: 8 * Math.sin(ambientRef.current.timeSec / 6),
       speedKnots: DEMO_WIND_SPEED_KNOTS,
       oscillationDeg: 0
     };
-    const ambientBoats = ambientRef.current.boats.map((boat, index) =>
-      toBoatState(index === 0 ? "red" : "blue", "", index === 0 ? "#ff533d" : "#1597ff", boat)
-    );
     return (
       <main className="intro-carousel">
         <div className="intro-backdrop">
           <LessonStage className="intro-canvas">
             <WaterLayer />
             <WindLayer wind={ambientWind} visible />
-            {ambientBoats.map((boat) => (
-              <BoatSprite key={boat.id} boat={boat} />
+            {ambientRef.current.boats.map((boat, index) => (
+              <BoatSprite
+                key={index === 0 ? "amb-red" : "amb-blue"}
+                boat={toBoatState(index === 0 ? "red" : "blue", "", index === 0 ? "#ff533d" : "#1597ff", boat.motion, boat.track)}
+              />
             ))}
           </LessonStage>
         </div>
@@ -319,56 +270,46 @@ export function IntroScreen() {
     );
   }
 
-  const shift = shiftRef.current;
-  const zone = zoneRef.current;
+  const duel = duelRef.current;
+  const playFrame = recording.frames[playheadRef.current];
+  const isPlayback = current.kind === "dark" || current.kind === "replay";
 
-  let wind: WindState;
-  let boats: BoatState[];
-  if (current.kind === "shift") {
-    wind = { directionDeg: shift.windDeg, speedKnots: DEMO_WIND_SPEED_KNOTS, oscillationDeg: shift.windOscDeg };
-    boats = [toBoatState("red", "红船", "#ff533d", shift.red), toBoatState("blue", "蓝船", "#1597ff", shift.blue)];
-  } else if (current.kind === "zones") {
-    wind = { directionDeg: 0, speedKnots: DEMO_WIND_SPEED_KNOTS, oscillationDeg: 0 };
-    boats = [toBoatState("red", "红船", "#ff533d", zone.red), toBoatState("blue", "蓝船", "#1597ff", zone.blue)];
-  } else {
-    wind = { directionDeg: liveWindDeg(liveTimeRef.current), speedKnots: DEMO_WIND_SPEED_KNOTS, oscillationDeg: 0 };
-    boats = [
-      toBoatState("red", "红船", "#ff533d", {
-        motion: liveRef.current.motion,
-        track: liveRef.current.track,
-        tackHeld: liveRef.current.motion.tack
-      })
-    ];
-  }
+  const wind: WindState = isPlayback
+    ? { directionDeg: playFrame.windDeg, speedKnots: DEMO_WIND_SPEED_KNOTS, oscillationDeg: playFrame.windOscDeg }
+    : { directionDeg: duel.windDeg, speedKnots: DEMO_WIND_SPEED_KNOTS, oscillationDeg: duel.windOscDeg };
 
-  const demoState = current.kind === "zones" ? zone : shift;
-  const lead =
-    current.kind === "live" ? 0 : leadMeters(demoState.red.motion.position, demoState.blue.motion.position);
-  const oscRounded = Math.round(shift.windOscDeg);
+  const redMotion = isPlayback ? playFrame.red : duel.red.motion;
+  const blueMotion = isPlayback ? playFrame.blue : duel.blue.motion;
+  const redTrack = isPlayback ? recording.redTrack.slice(0, playFrame.redTrackLen) : duel.red.track;
+  const blueTrack = isPlayback ? recording.blueTrack.slice(0, playFrame.blueTrackLen) : duel.blue.track;
+
+  const boats: BoatState[] = [
+    toBoatState("red", "红船", "#ff533d", redMotion, redTrack),
+    toBoatState("blue", "蓝船", "#1597ff", blueMotion, blueTrack)
+  ];
+
+  const lead = leadMeters(redMotion.position, blueMotion.position);
+  const oscRounded = Math.round(wind.oscillationDeg);
+  const raceGapSec = Math.round(recording.blueAtMarkSec - recording.redAtMarkSec);
+  const playbackRedDone = isPlayback && playFrame.timeSec >= recording.redAtMarkSec;
+  const playbackBlueDone = isPlayback && playFrame.timeSec >= recording.blueAtMarkSec;
 
   return (
     <main className="intro-carousel">
       <div className="intro-backdrop intro-backdrop-full">
         <LessonStage className="intro-canvas">
           <WaterLayer />
-          {current.kind === "zones" && <WindZoneLayer zones={zone.zones} />}
-          {current.kind === "shift" && (
+          {current.kind !== "dark" && (
             <LadderLayer
               windDeg={wind.directionDeg}
               boats={[
-                { position: shift.red.motion.position, color: "#ff533d" },
-                { position: shift.blue.motion.position, color: "#1597ff" }
+                { position: redMotion.position, color: "#ff533d" },
+                { position: blueMotion.position, color: "#1597ff" }
               ]}
             />
           )}
-          <WindLayer wind={wind} visible />
-          {current.kind !== "live" && <CourseLayer course={DEMO_COURSE} />}
-          {current.kind === "zones" && (
-            <>
-              <pixiText text="强风区" x={1880} y={450} style={{ fill: "#bfeeff", fontSize: 40, fontWeight: "700" }} />
-              <pixiText text="弱风区" x={730} y={450} style={{ fill: "#7fa8bd", fontSize: 40, fontWeight: "700" }} />
-            </>
-          )}
+          {current.kind !== "dark" && <WindLayer wind={wind} visible />}
+          <CourseLayer course={DEMO_COURSE} />
           <TacticalOverlayLayer boats={boats} overlays={DEMO_OVERLAYS} wind={wind} course={DEMO_COURSE} />
           {boats.map((boat) => (
             <BoatSprite key={boat.id} boat={boat} />
@@ -383,43 +324,58 @@ export function IntroScreen() {
           <p>{current.line}</p>
         </div>
 
-        {current.kind === "shift" && (
+        {current.kind === "dark" && (
+          <div className="stage-readouts">
+            {!playbackRedDone && (
+              <>
+                <div className="hud-chip hud-chip-red">红船 {speedKnotsOf(redMotion).toFixed(1)} 节</div>
+                <div className="hud-chip hud-chip-blue">蓝船 {speedKnotsOf(blueMotion).toFixed(1)} 节</div>
+              </>
+            )}
+            {playbackRedDone && !playbackBlueDone && <div className="hud-chip hud-chip-finish">红船到 1 标！</div>}
+            {playbackBlueDone && (
+              <div className="hud-chip hud-chip-finish">速度一样 · 红船先到！蓝船晚了 {raceGapSec} 秒</div>
+            )}
+          </div>
+        )}
+
+        {current.kind === "replay" && (
           <div className="stage-readouts">
             <div className="hud-chip">
               风摆 {oscRounded >= 0 ? "+" : ""}
               {oscRounded}°
             </div>
-            {shift.redAtMarkSec === undefined && Math.abs(lead) >= 2 && (
+            {!playbackRedDone && Math.abs(lead) >= 2 && (
               <div className={`hud-chip ${lead >= 0 ? "hud-chip-red" : ""}`}>
                 红船{lead >= 0 ? "领先" : "落后"} {Math.abs(Math.round(lead))} 米
               </div>
             )}
-            {shift.redAtMarkSec !== undefined && !shift.finished && (
-              <div className="hud-chip hud-chip-finish">红船到 1 标！</div>
-            )}
-            {shift.finished && (
-              <div className="hud-chip hud-chip-finish">
-                红船先到 · 蓝船晚了 {Math.round((shift.blueAtMarkSec ?? 0) - (shift.redAtMarkSec ?? 0))} 秒
-              </div>
-            )}
+            {playbackRedDone && !playbackBlueDone && <div className="hud-chip hud-chip-finish">红船到 1 标！</div>}
+            {playbackBlueDone && <div className="hud-chip hud-chip-finish">站对边，白赚 {raceGapSec} 秒</div>}
           </div>
         )}
 
-        {current.kind === "zones" && (
-          <div className="stage-readouts">
-            <div className="hud-chip hud-chip-red">红船 {boatSpeedKnots(zone.red).toFixed(1)} 节</div>
-            <div className="hud-chip hud-chip-blue">蓝船 {boatSpeedKnots(zone.blue).toFixed(1)} 节</div>
-            {!zone.finished && lead > 2 && <div className="hud-chip">红船领先 {Math.round(lead)} 米</div>}
-            {zone.finished && <div className="hud-chip hud-chip-finish">红船到 1 标！领先 {Math.abs(Math.round(lead))} 米</div>}
-          </div>
-        )}
-
-        {current.kind === "live" && (
+        {current.kind === "duel" && (
           <>
-            <RudderGauge rudderAngleDeg={liveRef.current.motion.rudderAngleDeg} />
-            <button type="button" className="intro-home-btn" onClick={() => setView("home")}>
-              返回首页
-            </button>
+            <div className="stage-readouts">
+              <div className="hud-chip">
+                风摆 {oscRounded >= 0 ? "+" : ""}
+                {oscRounded}°
+              </div>
+              {duel.autopilot && <div className="hud-chip hud-chip-accent">自动舵</div>}
+              {duel.redAtMarkSec !== undefined && duel.blueAtMarkSec === undefined && (
+                <div className="hud-chip hud-chip-finish">你先到 1 标！</div>
+              )}
+              {duel.finished && duel.redAtMarkSec! < duel.blueAtMarkSec! && (
+                <div className="hud-chip hud-chip-finish">
+                  你先到 · AI 晚了 {Math.round(duel.blueAtMarkSec! - duel.redAtMarkSec!)} 秒
+                </div>
+              )}
+              {duel.finished && duel.redAtMarkSec! >= duel.blueAtMarkSec! && (
+                <div className="hud-chip hud-chip-blue">AI 先到了 · 按 R 再来一把</div>
+              )}
+            </div>
+            <RudderGauge rudderAngleDeg={duel.red.motion.rudderAngleDeg} />
           </>
         )}
 
@@ -429,59 +385,21 @@ export function IntroScreen() {
   );
 }
 
-function liveWindDeg(timeSec: number): number {
-  return 8 * Math.sin((2 * Math.PI * timeSec) / 25);
-}
-
-function ambientWindDeg(timeSec: number): number {
-  return 8 * Math.sin(timeSec / 6);
-}
-
-function toBoatState(id: string, name: string, color: string, boat: DemoBoat): BoatState {
+function toBoatState(id: string, name: string, color: string, motion: BoatMotionState, track: Vec2[]): BoatState {
   return {
     id: id as BoatState["id"],
     name,
     color,
     boatType: "op",
-    ...boat.motion,
+    ...motion,
     legIndex: 0,
     finished: false,
     startStatus: "started",
     markSweepDeg: 0,
     tackCount: 0,
     penaltyCount: 0,
-    track: boat.track
+    track
   };
-}
-
-function RaceSketch() {
-  return (
-    <svg className="intro-illust" viewBox="0 0 340 190" aria-hidden="true">
-      <circle cx="170" cy="26" r="9" fill="#ff9f43" />
-      <polyline
-        points="130,180 205,118 158,62 168,40"
-        fill="none"
-        stroke="#ff533d"
-        strokeWidth="4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <polyline
-        points="210,180 74,124 48,74 150,38"
-        fill="none"
-        stroke="#1597ff"
-        strokeWidth="4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeDasharray="10 8"
-        opacity="0.8"
-      />
-      <g stroke="#9fd2e8" strokeWidth="3" strokeLinecap="round" opacity="0.85">
-        <path d="M 268 52 q 18 10 8 30" fill="none" />
-        <path d="M 292 44 q 18 10 8 30" fill="none" />
-      </g>
-    </svg>
-  );
 }
 
 function EyeIcon() {
