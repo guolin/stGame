@@ -184,12 +184,13 @@ input {
 
 .countdown {
   position: absolute;
-  left: 50%;
+  left: 342px;
   top: 22px;
-  transform: translateX(-50%);
-  min-width: 240px;
+  transform: none;
+  width: 276px;
+  min-width: 0;
   text-align: center;
-  font-size: 68px;
+  font-size: 42px;
   line-height: 1;
   font-weight: 900;
   letter-spacing: 0;
@@ -201,15 +202,15 @@ input {
 }
 
 .countdown.racing {
-  font-size: 50px;
+  font-size: 42px;
 }
 
 .countdown.paused,
 .countdown.winner {
   border-radius: 8px;
-  padding: 16px 32px;
+  padding: 14px 18px;
   background: rgba(4, 26, 42, 0.78);
-  font-size: 44px;
+  font-size: 34px;
 }
 
 .hud-panel,
@@ -227,9 +228,9 @@ input {
   position: absolute;
   top: 22px;
   width: 128px;
-  padding: 14px 16px;
+  padding: 10px 12px;
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .wind-panel {
@@ -237,7 +238,8 @@ input {
 }
 
 .current-panel {
-  right: 22px;
+  left: 22px;
+  top: 150px;
 }
 
 .label {
@@ -247,12 +249,12 @@ input {
 }
 
 .wind-arrow {
-  width: 46px;
-  height: 46px;
+  width: 38px;
+  height: 38px;
   display: grid;
   place-items: center;
   color: #ffffff;
-  font-size: 42px;
+  font-size: 34px;
   transform-origin: center;
 }
 
@@ -272,32 +274,34 @@ input {
 
 .player-panel {
   position: absolute;
-  bottom: 24px;
-  min-width: 210px;
+  right: 22px;
+  left: auto;
+  bottom: auto;
+  min-width: 280px;
+  width: 280px;
   min-height: 58px;
-  padding: 12px 16px;
+  padding: 10px 14px;
   display: flex;
   align-items: center;
   gap: 12px;
   font-size: 18px;
+  line-height: 1.2;
 }
 
 .player-panel.red {
-  left: 24px;
+  top: 22px;
 }
 
 .player-panel.blue {
-  right: 24px;
+  top: 134px;
 }
 
 .player-panel.green {
-  left: 24px;
-  bottom: 96px;
+  top: 246px;
 }
 
 .player-panel.yellow {
-  right: 24px;
-  bottom: 96px;
+  top: 358px;
 }
 
 .player-dot {
@@ -310,26 +314,27 @@ input {
 .coach-controls {
   pointer-events: auto;
   position: absolute;
-  left: 50%;
-  bottom: 18px;
-  transform: translateX(-50%);
-  width: min(760px, 64vw);
-  padding: 12px;
+  left: 22px;
+  top: 270px;
+  width: 156px;
+  padding: 8px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex-wrap: wrap;
-  gap: 10px;
+  gap: 6px;
 }
 
 .coach-controls button {
-  height: 36px;
+  height: 30px;
+  width: 100%;
   border: 0;
   border-radius: 6px;
-  padding: 0 14px;
+  padding: 0 10px;
   color: #073047;
   background: #d9f7ff;
   font-weight: 800;
+  font-size: 13px;
   cursor: pointer;
 }
 
@@ -337,9 +342,60 @@ input {
   background: #ffe082;
 }
 
+.speed-control {
+  position: relative;
+  width: 100%;
+}
+
+.speed-popover {
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%);
+  width: 300px;
+  padding: 14px 16px 12px;
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(160, 229, 255, 0.36);
+  border-radius: 8px;
+  background: rgba(3, 25, 42, 0.94);
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.38);
+  color: #e9fbff;
+  z-index: 8;
+}
+
+.speed-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  font-size: 14px;
+}
+
+.speed-popover-header strong {
+  color: #ffe082;
+  font-size: 18px;
+}
+
+.speed-popover input[type="range"] {
+  width: 100%;
+  accent-color: #ffe082;
+}
+
+.speed-marks {
+  display: flex;
+  justify-content: space-between;
+  color: #bcecff;
+  font-size: 12px;
+  line-height: 1;
+}
+
 .boat-count {
   display: flex;
-  gap: 6px;
+  flex-direction: column;
+  width: 100%;
+  gap: 5px;
 }
 
 .boat-count button {
@@ -347,10 +403,10 @@ input {
 }
 
 .overlay-toggles {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  font-size: 13px;
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  font-size: 12px;
 }
 
 .overlay-toggles label {
@@ -362,12 +418,14 @@ input {
 
 .controls-hint {
   position: absolute;
-  left: 50%;
-  top: 98px;
-  transform: translateX(-50%);
+  left: 342px;
+  right: 342px;
+  bottom: 22px;
+  transform: none;
   padding: 8px 14px;
   color: #d8f7ff;
-  font-size: 15px;
+  font-size: 13px;
+  line-height: 1.32;
 }
 
 .rule-alert {
@@ -397,27 +455,29 @@ input {
 
 .rule-log {
   position: absolute;
-  right: 22px;
-  top: 170px;
-  width: 330px;
-  padding: 14px 16px;
+  left: 198px;
+  top: 156px;
+  width: 250px;
+  max-height: 136px;
+  overflow: hidden;
+  padding: 10px 12px;
   display: grid;
-  gap: 8px;
+  gap: 5px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 8px;
   background: rgba(3, 25, 42, 0.72);
   backdrop-filter: blur(10px);
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .rule-log strong {
   color: #ffe082;
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .rule-log span {
   color: #dff8ff;
-  line-height: 1.32;
+  line-height: 1.22;
 }
 
 /* ---------- home entries ---------- */
@@ -682,6 +742,154 @@ input {
 .rule-alert.breach {
   border-color: rgba(255, 96, 64, 0.9);
   background: rgba(74, 24, 12, 0.92);
+}
+
+@media (max-width: 959px) {
+  .game-screen {
+    min-width: 0;
+    min-height: 620px;
+  }
+
+  .game-canvas {
+    width: 100vw !important;
+    height: min(64.286vw, 100vh) !important;
+  }
+
+  .hud-panel {
+    top: 10px;
+    width: 92px;
+    padding: 8px;
+    gap: 4px;
+  }
+
+  .wind-panel {
+    left: 8px;
+  }
+
+  .current-panel {
+    left: 8px;
+    top: 126px;
+  }
+
+  .label {
+    font-size: 11px;
+  }
+
+  .wind-arrow {
+    width: 28px;
+    height: 28px;
+    font-size: 26px;
+  }
+
+  .current-arrows {
+    font-size: 20px;
+  }
+
+  .countdown {
+    left: 108px;
+    top: 112px;
+    width: 160px;
+    font-size: 24px;
+  }
+
+  .countdown.racing,
+  .countdown.paused,
+  .countdown.winner {
+    font-size: 22px;
+  }
+
+  .player-panel {
+    right: 8px;
+    width: 168px;
+    min-width: 168px;
+    min-height: 0;
+    padding: 8px;
+    column-gap: 8px;
+    row-gap: 2px;
+    font-size: 11px;
+    line-height: 1.2;
+  }
+
+  .player-panel.red {
+    top: 10px;
+  }
+
+  .player-panel.blue {
+    top: 108px;
+  }
+
+  .player-panel.green {
+    top: 206px;
+  }
+
+  .player-panel.yellow {
+    top: 304px;
+  }
+
+  .player-dot {
+    width: 16px;
+    height: 16px;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.16);
+  }
+
+  .coach-controls {
+    left: 8px;
+    top: 216px;
+    width: 92px;
+    padding: 6px;
+    gap: 4px;
+  }
+
+  .coach-controls button {
+    height: 24px;
+    padding: 0 4px;
+    font-size: 11px;
+  }
+
+  .speed-popover {
+    left: calc(100% + 8px);
+    width: 196px;
+    padding: 10px;
+  }
+
+  .speed-popover-header {
+    font-size: 12px;
+  }
+
+  .speed-popover-header strong {
+    font-size: 14px;
+  }
+
+  .speed-marks {
+    font-size: 10px;
+  }
+
+  .boat-count,
+  .overlay-toggles {
+    gap: 4px;
+  }
+
+  .overlay-toggles {
+    font-size: 10px;
+  }
+
+  .rule-log {
+    left: 108px;
+    top: 172px;
+    width: 160px;
+    max-height: 118px;
+    padding: 8px;
+    gap: 4px;
+    font-size: 10px;
+  }
+
+  .rule-log strong {
+    font-size: 12px;
+  }
+
+  .controls-hint {
+    display: none;
+  }
 }
 
 /* ---------- lesson screens ---------- */

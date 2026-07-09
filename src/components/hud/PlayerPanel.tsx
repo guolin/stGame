@@ -24,10 +24,10 @@ export function PlayerPanel({ boatId }: PlayerPanelProps) {
       <span className="player-dot" style={{ backgroundColor: boat.color }} />
       <strong>{boat.name}</strong>
       <span>
-        STW {stw.toFixed(1)} · SOG {sog.toFixed(1)} kt
+        相对水速 {stw.toFixed(1)} · 对地速度 {sog.toFixed(1)} 节
       </span>
       <span>
-        TWA {Math.round(boat.twaDeg)}° · {boat.tack === "starboard" ? "右舷受风" : "左舷受风"}
+        真风角 {Math.round(boat.twaDeg)}°
       </span>
       {penaltyLeftSec > 0 ? (
         <span className="penalty">减速 {penaltyLeftSec.toFixed(1)}s</span>

@@ -12,7 +12,7 @@ export function CurrentPanel() {
     <section className="hud-panel current-panel">
       <span className="label">水流</span>
       <div className="current-arrows">➜➜➜</div>
-      <strong>{speed.toFixed(1)} kt</strong>
+      <strong>{speed.toFixed(1)} 节</strong>
     </section>
   );
 }
