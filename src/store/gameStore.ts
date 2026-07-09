@@ -44,13 +44,12 @@ type GameStore = {
   toggleOverlay: (key: keyof OverlaySettings) => void;
   toggleHud: () => void;
   togglePause: () => void;
-  toggleSlowMotion: () => void;
+  setTimeScale: (timeScale: number) => void;
   restart: () => void;
 };
 
 const BOAT_ORDER: BoatId[] = ["red", "blue", "green", "yellow"];
-const NORMAL_TIME_SCALE = 1.6;
-const SLOW_MOTION_TIME_SCALE = 0.8;
+const NORMAL_TIME_SCALE = 1;
 
 function createEmptyControls(): Record<BoatId, BoatControls> {
   return {
@@ -88,8 +87,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return;
     }
 
-    // Slow motion feeds less wall time into the accumulator; every simulated
-    // tick still advances exactly SIM_DT so results stay deterministic.
+    // Time scaling feeds more or less wall time into the accumulator; every
+    // simulated tick still advances exactly SIM_DT so results stay deterministic.
     const { steps, remainder } = splitFrameIntoSteps(frameAccumulator, frameDt * state.timeScale, SIM_DT);
     frameAccumulator = remainder;
     if (steps === 0) return;
@@ -182,10 +181,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }
     }));
   },
-  toggleSlowMotion: () =>
-    set((state) => ({
-      timeScale: state.timeScale === NORMAL_TIME_SCALE ? SLOW_MOTION_TIME_SCALE : NORMAL_TIME_SCALE
-    })),
+  setTimeScale: (timeScale) => set({ timeScale: Math.max(1, Math.min(2, timeScale)) }),
   restart: () => {
     const state = get();
     const env = buildEnvironment(state.difficulty, state.environment);

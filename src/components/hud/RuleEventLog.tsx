@@ -7,7 +7,7 @@ export function RuleEventLog() {
   return (
     <section className="rule-log">
       <strong>比赛事件</strong>
-      {events.slice(0, 6).map((event) => (
+      {events.slice(0, 4).map((event) => (
         <span key={event.id} className={event.kind === "rule" || event.kind === "ocs" ? "alert" : ""}>
           {formatTime(event.timeMs)} · {event.message}
         </span>

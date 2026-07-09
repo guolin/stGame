@@ -235,10 +235,10 @@ export function LessonBoatScreen() {
 
           <div className="lesson-readouts">
             <span>
-              STW <strong>{stwKnots.toFixed(1)}</strong> kt
+              STW <strong>{stwKnots.toFixed(1)}</strong> 节
             </span>
             <span>
-              SOG <strong>{sogKnots.toFixed(1)}</strong> kt
+              SOG <strong>{sogKnots.toFixed(1)}</strong> 节
             </span>
             <span>
               TWA <strong>{Math.round(motion.twaDeg)}</strong>°

@@ -9,7 +9,7 @@ export function WindPanel() {
       <div className="wind-arrow" style={{ transform: `rotate(${wind.directionDeg + 180}deg)` }}>
         ↑
       </div>
-      <strong>{wind.speedKnots.toFixed(1)} kt</strong>
+      <strong>{wind.speedKnots.toFixed(1)} 节</strong>
       <span className={wind.oscillationDeg >= 0 ? "lift" : "header"}>{wind.oscillationDeg >= 0 ? "右摆" : "左摆"}</span>
     </section>
   );

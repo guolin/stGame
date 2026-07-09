@@ -80,7 +80,7 @@ export function PolarDial({ boatType, twsKnots, twaDeg, stwKnots, tack }: PolarD
       </circle>
 
       <text x={CENTER} y={SIZE - 8} textAnchor="middle" fill="#bcecff" fontSize="14">
-        TWA {Math.round(twaDeg)}° · 理论 {currentSpeed.toFixed(1)} kt · 实际 {stwKnots.toFixed(1)} kt
+        TWA {Math.round(twaDeg)}° · 理论 {currentSpeed.toFixed(1)} 节 · 实际 {stwKnots.toFixed(1)} 节
       </text>
     </svg>
   );

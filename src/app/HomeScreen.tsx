@@ -28,7 +28,7 @@ export function HomeScreen() {
       onClick: () => setView("intro")
     },
     {
-      title: "快速 Demo",
+      title: "快速开始",
       blurb: "一键进入 4 船标准比赛（现场兜底）",
       onClick: () => {
         setBoatCount(4);
