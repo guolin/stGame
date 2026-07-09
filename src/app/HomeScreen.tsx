@@ -5,6 +5,7 @@ export function HomeScreen() {
   const setView = useGameStore((state) => state.setView);
   const setSetupStep = useGameStore((state) => state.setSetupStep);
   const setBoatCount = useGameStore((state) => state.setBoatCount);
+  const setCourse = useGameStore((state) => state.setCourse);
   const startRace = useGameStore((state) => state.startRace);
 
   const entries = [
@@ -32,6 +33,7 @@ export function HomeScreen() {
       blurb: "一键进入 4 船标准比赛（现场兜底）",
       onClick: () => {
         setBoatCount(4);
+        setCourse("windwardLeeward");
         startRace();
       }
     }

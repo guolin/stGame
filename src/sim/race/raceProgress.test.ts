@@ -3,8 +3,9 @@ import { updateBoatRace } from "./raceProgress";
 import { getCourse } from "../course/courses";
 import type { BoatState } from "../../game/types";
 
-const io = getCourse("io");
-const lineY = (io.startLine.left.y + io.startLine.right.y) / 2; // 1580
+const course = getCourse("windwardLeeward");
+const lineY = (course.startLine.left.y + course.startLine.right.y) / 2;
+const finishY = (course.finishLine.left.y + course.finishLine.right.y) / 2;
 const midX = 1400;
 
 function makeBoat(overrides: Partial<BoatState> = {}): BoatState {
@@ -37,27 +38,27 @@ function makeBoat(overrides: Partial<BoatState> = {}): BoatState {
 describe("start legality", () => {
   it("flags a boat as OCS if it is on the course side at the starting signal", () => {
     const boat = makeBoat({ position: { x: midX, y: lineY - 40 } });
-    const result = updateBoatRace({ boat, prevPosition: boat.position, course: io, elapsedMs: 0, startSignal: true });
+    const result = updateBoatRace({ boat, prevPosition: boat.position, course, elapsedMs: 0, startSignal: true });
     expect(result.boat.startStatus).toBe("ocs");
     expect(result.events.some((e) => e.kind === "ocs")).toBe(true);
   });
 
   it("starts a boat that crosses the line from the pre-start side after the signal", () => {
     const boat = makeBoat({ position: { x: midX, y: lineY - 5 } });
-    const result = updateBoatRace({ boat, prevPosition: { x: midX, y: lineY + 5 }, course: io, elapsedMs: 1000, startSignal: false });
+    const result = updateBoatRace({ boat, prevPosition: { x: midX, y: lineY + 5 }, course, elapsedMs: 1000, startSignal: false });
     expect(result.boat.startStatus).toBe("started");
     expect(result.events.some((e) => e.kind === "start")).toBe(true);
   });
 
   it("clears OCS only after the boat returns fully to the pre-start side", () => {
     const ocsBoat = makeBoat({ startStatus: "ocs", position: { x: midX, y: lineY + 30 } });
-    const back = updateBoatRace({ boat: ocsBoat, prevPosition: { x: midX, y: lineY - 10 }, course: io, elapsedMs: 2000, startSignal: false });
+    const back = updateBoatRace({ boat: ocsBoat, prevPosition: { x: midX, y: lineY - 10 }, course, elapsedMs: 2000, startSignal: false });
     expect(back.boat.startStatus).toBe("prestart");
 
     const restart = updateBoatRace({
       boat: back.boat,
       prevPosition: { x: midX, y: lineY + 30 },
-      course: io,
+      course,
       elapsedMs: 3000,
       startSignal: false
     });
@@ -66,15 +67,15 @@ describe("start legality", () => {
   });
 
   it("does not advance legs before a legal start", () => {
-    const mark = io.marks[0];
+    const mark = course.marks[0];
     const boat = makeBoat({ startStatus: "ocs", position: { ...mark.position } });
-    const result = updateBoatRace({ boat, prevPosition: boat.position, course: io, elapsedMs: 0, startSignal: false });
+    const result = updateBoatRace({ boat, prevPosition: boat.position, course, elapsedMs: 0, startSignal: false });
     expect(result.boat.legIndex).toBe(0);
   });
 });
 
 describe("mark rounding direction", () => {
-  const mark = io.marks[0]; // port rounding
+  const mark = course.marks[0]; // port rounding
 
   function roundMark(path: { x: number; y: number }[], startLegIndex = 0) {
     let boat = makeBoat({ startStatus: "started", legIndex: startLegIndex, position: path[0] });
@@ -84,7 +85,7 @@ describe("mark rounding direction", () => {
       const result = updateBoatRace({
         boat: { ...boat, position: point },
         prevPosition: prev,
-        course: io,
+        course,
         elapsedMs: 0,
         startSignal: false
       });
@@ -146,17 +147,17 @@ describe("finish", () => {
   it("finishes a started boat that crosses the finish line on the final leg", () => {
     const boat = makeBoat({
       startStatus: "started",
-      legIndex: io.legMarkIds.length,
-      position: { x: midX, y: lineY + 5 }
+      legIndex: course.legMarkIds.length,
+      position: { x: midX, y: finishY + 5 }
     });
-    const result = updateBoatRace({ boat, prevPosition: { x: midX, y: lineY - 5 }, course: io, elapsedMs: 90_000, startSignal: false });
+    const result = updateBoatRace({ boat, prevPosition: { x: midX, y: finishY - 5 }, course, elapsedMs: 90_000, startSignal: false });
     expect(result.boat.finished).toBe(true);
     expect(result.events.some((e) => e.kind === "finish")).toBe(true);
   });
 
   it("does not finish a boat that has not rounded all marks", () => {
-    const boat = makeBoat({ startStatus: "started", legIndex: 0, position: { x: midX, y: lineY + 5 } });
-    const result = updateBoatRace({ boat, prevPosition: { x: midX, y: lineY - 5 }, course: io, elapsedMs: 90_000, startSignal: false });
+    const boat = makeBoat({ startStatus: "started", legIndex: 0, position: { x: midX, y: finishY + 5 } });
+    const result = updateBoatRace({ boat, prevPosition: { x: midX, y: finishY - 5 }, course, elapsedMs: 90_000, startSignal: false });
     expect(result.boat.finished).toBe(false);
   });
 });

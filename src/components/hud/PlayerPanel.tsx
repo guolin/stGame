@@ -14,7 +14,8 @@ export function PlayerPanel({ boatId }: PlayerPanelProps) {
   if (!boat) return null;
 
   const target = currentTarget(course, boat.legIndex);
-  const legLabel = boat.finished ? "已完赛" : target.kind === "mark" ? `去 ${target.mark.label}` : "冲终点";
+  const legName = `leg ${boat.legIndex + 1}`;
+  const legLabel = boat.finished ? "已完赛" : target.kind === "mark" ? `${legName} · 去 ${target.mark.label}` : `${legName} · 冲终点`;
   const stw = boat.speed / PIXELS_PER_KNOT;
   const sog = Math.hypot(boat.velocity.x, boat.velocity.y) / PIXELS_PER_KNOT;
   const penaltyLeftSec = boat.penaltyUntilMs ? Math.max(0, (boat.penaltyUntilMs - elapsedMs) / 1000) : 0;

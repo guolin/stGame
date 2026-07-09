@@ -65,10 +65,10 @@ let frameAccumulator = 0;
 export const useGameStore = create<GameStore>((set, get) => ({
   view: "home",
   setupStep: "players",
-  boats: cloneInitialBoats(getCourse("io")),
+  boats: cloneInitialBoats(getCourse("windwardLeeward")),
   activeBoatIds: ["red", "blue"],
   race: cloneInitialRace(),
-  course: getCourse("io"),
+  course: getCourse("windwardLeeward"),
   difficulty: "standard",
   environment: "combo",
   windField: INITIAL_WIND_FIELD,
