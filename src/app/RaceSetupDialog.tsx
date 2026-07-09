@@ -29,17 +29,35 @@ export function RaceSetupDialog({ onClose }: RaceSetupDialogProps) {
     <div className="modal-scrim" role="presentation">
       <section className="race-setup-modal" role="dialog" aria-modal="true" aria-labelledby="race-setup-title">
         <p className="eyebrow">比赛设置</p>
-        <h2 id="race-setup-title">选择人数和航线</h2>
-        <p className="modal-copy">风摆、风区、真风和自动裁判已固定开启；水流关闭。手柄会自动检测，键盘始终可兜底。</p>
+        <h2 id="race-setup-title">开始一场比赛</h2>
+        <p className="modal-copy">默认开启风摆、真风和自动裁判；水流关闭。</p>
 
-        <div className="setup-block">
-          <strong>船数</strong>
-          <div className="segmented-options">
-            {[1, 2, 4].map((count) => (
-              <FocusableButton key={count} type="button" className={activeBoatIds.length === count ? "selected" : ""} onClick={() => setBoatCount(count)}>
-                {count} 船
-              </FocusableButton>
-            ))}
+        <div className="setup-grid compact">
+          <div className="setup-block">
+            <strong>船数</strong>
+            <div className="segmented-options">
+              {[1, 2, 4].map((count) => (
+                <FocusableButton key={count} type="button" className={activeBoatIds.length === count ? "selected" : ""} onClick={() => setBoatCount(count)}>
+                  {count} 船
+                </FocusableButton>
+              ))}
+            </div>
+          </div>
+
+          <div className="setup-block">
+            <strong>风区</strong>
+            <div className="segmented-options">
+              {([1, 3, 9] as WindZoneCount[]).map((count) => (
+                <FocusableButton
+                  key={count}
+                  type="button"
+                  className={windZoneCount === count ? "selected" : ""}
+                  onClick={() => setWindZoneCount(count)}
+                >
+                  {count} 区
+                </FocusableButton>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -58,30 +76,13 @@ export function RaceSetupDialog({ onClose }: RaceSetupDialogProps) {
           </div>
         </div>
 
-        <div className="setup-block">
-          <strong>风区</strong>
-          <div className="segmented-options">
-            {([1, 3, 9] as WindZoneCount[]).map((count) => (
-              <FocusableButton
-                key={count}
-                type="button"
-                className={windZoneCount === count ? "selected" : ""}
-                onClick={() => setWindZoneCount(count)}
-              >
-                {count} 区
-              </FocusableButton>
-            ))}
-          </div>
-        </div>
-
-        <div className="control-cheatsheet">
-          <strong>键盘兜底</strong>
+        <div className="control-cheatsheet compact">
+          <strong>键盘</strong>
           <span>红 A/D</span>
           <span>绿 ←/→</span>
           <span>黄 J/L</span>
-          <span>蓝 小键盘 4/6</span>
+          <span>蓝 4/6</span>
           <span>Space 暂停</span>
-          <span>右侧 ↻ 重开</span>
         </div>
 
         <div className="modal-actions">

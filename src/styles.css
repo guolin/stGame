@@ -741,12 +741,12 @@ input {
 
 .race-setup-modal,
 .result-modal {
-  width: min(900px, calc(100vw - 68px));
+  width: min(760px, calc(100vw - 68px));
   max-height: calc(100vh - 68px);
   overflow: auto;
   border: 1px solid rgba(183, 233, 255, 0.3);
   border-radius: 8px;
-  padding: 28px;
+  padding: 24px;
   background: rgba(5, 36, 56, 0.96);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
 }
@@ -754,22 +754,28 @@ input {
 .race-setup-modal h2,
 .result-modal h1 {
   margin: 6px 0 10px;
-  font-size: 34px;
+  font-size: 30px;
   line-height: 1.12;
   letter-spacing: 0;
 }
 
 .modal-copy {
-  margin: 0 0 22px;
+  margin: 0 0 16px;
   color: #dff7ff;
-  font-size: 17px;
+  font-size: 15px;
   line-height: 1.45;
 }
 
 .setup-block {
   display: grid;
-  gap: 10px;
-  margin-top: 20px;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.setup-grid.compact {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .setup-block > strong,
@@ -794,7 +800,7 @@ input {
 }
 
 .segmented-options button {
-  height: 48px;
+  height: 40px;
   font-weight: 900;
 }
 
@@ -807,33 +813,36 @@ input {
 
 .course-options.compact {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: 1fr;
+  gap: 8px;
 }
 
 .course-options button {
-  min-height: 104px;
-  padding: 14px;
+  min-height: 54px;
+  padding: 10px 12px;
   display: grid;
-  gap: 8px;
+  grid-template-columns: minmax(96px, 0.28fr) 1fr;
+  align-items: center;
+  gap: 12px;
   text-align: left;
 }
 
 .course-options span {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 900;
 }
 
 .course-options em {
   color: #bcecff;
   font-style: normal;
-  font-size: 14px;
-  line-height: 1.4;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.25;
 }
 
 .control-cheatsheet {
-  margin-top: 20px;
-  padding: 14px;
+  margin-top: 14px;
+  padding: 10px;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
@@ -842,13 +851,19 @@ input {
   background: rgba(3, 25, 42, 0.54);
 }
 
+.control-cheatsheet.compact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
 .control-cheatsheet strong {
   grid-column: 1 / -1;
 }
 
 .control-cheatsheet span {
-  min-height: 34px;
-  padding: 8px 10px;
+  min-height: 30px;
+  padding: 6px 9px;
   border-radius: 6px;
   background: rgba(217, 247, 255, 0.1);
   color: #e7faff;
@@ -857,10 +872,21 @@ input {
 }
 
 .modal-actions {
-  margin-top: 24px;
+  margin-top: 18px;
   display: flex;
   gap: 12px;
   justify-content: flex-end;
+}
+
+@media (max-width: 720px) {
+  .setup-grid.compact {
+    grid-template-columns: 1fr;
+  }
+
+  .course-options button {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
 }
 
 .modal-actions button {
