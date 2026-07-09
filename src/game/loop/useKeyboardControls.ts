@@ -5,19 +5,17 @@ import type { BoatId } from "../types";
 const keyMap: Record<string, { boat: BoatId; rudder: -1 | 1 }> = {
   KeyA: { boat: "red", rudder: -1 },
   KeyD: { boat: "red", rudder: 1 },
-  ArrowLeft: { boat: "blue", rudder: -1 },
-  ArrowRight: { boat: "blue", rudder: 1 },
-  KeyJ: { boat: "green", rudder: -1 },
-  KeyL: { boat: "green", rudder: 1 },
-  Numpad4: { boat: "yellow", rudder: -1 },
-  Numpad6: { boat: "yellow", rudder: 1 }
+  ArrowLeft: { boat: "green", rudder: -1 },
+  ArrowRight: { boat: "green", rudder: 1 },
+  KeyJ: { boat: "yellow", rudder: -1 },
+  KeyL: { boat: "yellow", rudder: 1 },
+  Numpad4: { boat: "blue", rudder: -1 },
+  Numpad6: { boat: "blue", rudder: 1 }
 };
 
 export function useKeyboardControls() {
   const setControl = useGameStore((state) => state.setControl);
   const togglePause = useGameStore((state) => state.togglePause);
-  const toggleHud = useGameStore((state) => state.toggleHud);
-  const restart = useGameStore((state) => state.restart);
   const lastRudderRef = useRef<Record<BoatId, number>>({ red: 0, blue: 0, green: 0, yellow: 0 });
 
   useEffect(() => {
@@ -39,7 +37,7 @@ export function useKeyboardControls() {
 
     let frame = 0;
     const pollHeldKeys = () => {
-      (["red", "blue", "green", "yellow"] as BoatId[]).forEach((boat) => updateRudder(boat));
+      (["red", "green", "yellow", "blue"] as BoatId[]).forEach((boat) => updateRudder(boat));
       frame = requestAnimationFrame(pollHeldKeys);
     };
 
@@ -50,15 +48,6 @@ export function useKeyboardControls() {
         togglePause();
         return;
       }
-      if (event.code === "KeyR") {
-        restart();
-        return;
-      }
-      if (event.code === "KeyH") {
-        toggleHud();
-        return;
-      }
-
       const mapping = keyMap[event.code];
       if (!mapping) return;
       event.preventDefault();
@@ -76,7 +65,7 @@ export function useKeyboardControls() {
 
     const handleBlur = () => {
       downKeys.clear();
-      (["red", "blue", "green", "yellow"] as BoatId[]).forEach((boat) => updateRudder(boat, 0));
+      (["red", "green", "yellow", "blue"] as BoatId[]).forEach((boat) => updateRudder(boat, 0));
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -90,5 +79,5 @@ export function useKeyboardControls() {
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", handleBlur);
     };
-  }, [restart, setControl, toggleHud, togglePause]);
+  }, [setControl, togglePause]);
 }

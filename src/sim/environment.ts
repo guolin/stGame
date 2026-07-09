@@ -1,9 +1,10 @@
-import type { CurrentZone, OverlaySettings } from "../game/types";
-import { INITIAL_WIND_ZONES } from "../game/constants";
+import type { CurrentZone, OverlaySettings, WindZoneState } from "../game/types";
+import { INITIAL_WIND_ZONES, WORLD } from "../game/constants";
 import type { WindFieldConfig } from "./wind/windField";
 
 export type DifficultyId = "easy" | "standard" | "race";
 export type EnvironmentId = "stable" | "oscillating" | "current" | "gust" | "combo";
+export type WindZoneCount = 1 | 3 | 9;
 
 export const DIFFICULTY_IDS: DifficultyId[] = ["easy", "standard", "race"];
 export const ENVIRONMENT_IDS: EnvironmentId[] = ["stable", "oscillating", "current", "gust", "combo"];
@@ -38,6 +39,61 @@ const CURRENT_ZONES: CurrentZone[] = [
 ];
 
 const WEAK_CURRENT: CurrentZone[] = [{ id: "weak-drift", center: { x: 1400, y: 900 }, radius: 700, vector: { x: 4, y: 1 } }];
+
+const NINE_ZONE_DELTAS = [
+  { speedDeltaKnots: 1.4, shiftDeg: -8 },
+  { speedDeltaKnots: -0.5, shiftDeg: 3 },
+  { speedDeltaKnots: 1.0, shiftDeg: 7 },
+  { speedDeltaKnots: -0.8, shiftDeg: 6 },
+  { speedDeltaKnots: 0.6, shiftDeg: -4 },
+  { speedDeltaKnots: 1.2, shiftDeg: 9 },
+  { speedDeltaKnots: 0.9, shiftDeg: -6 },
+  { speedDeltaKnots: -0.6, shiftDeg: 4 },
+  { speedDeltaKnots: 1.5, shiftDeg: -9 }
+];
+
+export function buildWindZones(count: WindZoneCount): WindZoneState[] {
+  if (count === 1) {
+    return [
+      {
+        id: "whole-course-wind",
+        bounds: { x: 0, y: 0, width: WORLD.width, height: WORLD.height },
+        speedDeltaKnots: 0.4,
+        shiftDeg: -3,
+        color: "#063f62",
+        alpha: 0,
+        phase: 0,
+        phaseSpeed: 0.08
+      }
+    ];
+  }
+
+  if (count === 3) {
+    return INITIAL_WIND_ZONES.slice(0, 3).map((zone) => ({ ...zone, alpha: 0, bounds: { ...zone.bounds } }));
+  }
+
+  const cellWidth = WORLD.width / 3;
+  const cellHeight = WORLD.height / 3;
+  return NINE_ZONE_DELTAS.map((delta, index) => {
+    const col = index % 3;
+    const row = Math.floor(index / 3);
+    return {
+      id: `wind-cell-${row + 1}-${col + 1}`,
+      bounds: {
+        x: col * cellWidth,
+        y: row * cellHeight,
+        width: col === 2 ? WORLD.width - col * cellWidth : cellWidth,
+        height: row === 2 ? WORLD.height - row * cellHeight : cellHeight
+      },
+      speedDeltaKnots: delta.speedDeltaKnots,
+      shiftDeg: delta.shiftDeg,
+      color: "#063f62",
+      alpha: 0,
+      phase: index * 0.45,
+      phaseSpeed: 0.08 + (index % 3) * 0.03
+    };
+  });
+}
 
 function makeGusts(kind: "single" | "double"): WindFieldConfig["gusts"] {
   const primary = {

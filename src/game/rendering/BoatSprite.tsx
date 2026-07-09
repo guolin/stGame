@@ -51,18 +51,6 @@ export function BoatSprite({ boat }: BoatSpriteProps) {
       <pixiContainer x={boat.position.x} y={boat.position.y} rotation={(boat.headingDeg * Math.PI) / 180}>
         <GraphicsShape draw={drawBoat} />
       </pixiContainer>
-      <pixiText
-        text={boat.name}
-        x={boat.position.x - 48}
-        y={boat.position.y + 58}
-        style={{
-          fill: THEME.boat.nameTextColor,
-          fontFamily: THEME.text.fontFamily,
-          fontSize: THEME.boat.nameFontSize,
-          fontWeight: "700",
-          stroke: { color: THEME.boat.nameTextStrokeColor, width: THEME.boat.nameTextStrokeWidth }
-        }}
-      />
     </pixiContainer>
   );
 }

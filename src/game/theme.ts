@@ -20,6 +20,7 @@ export const THEME = {
   },
   wind: {
     arrowColor: "#c5f6ff",
+    arrowHeadColor: "#dff8ff",
     arrowAlpha: 0.34,
     arrowWidth: 7,
     arrowLength: 74

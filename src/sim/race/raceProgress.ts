@@ -79,7 +79,7 @@ export function updateBoatRace({ boat, prevPosition, course, elapsedMs, startSig
   }
 
   // --- final leg: finish crossing ---
-  if (isOnFinalLeg(course, next.legIndex) && crossesLineDownward(prevPosition, next.position, course.finishLine)) {
+  if (isOnFinalLeg(course, next.legIndex) && crossesLine(prevPosition, next.position, course.finishLine)) {
     next = { ...next, finished: true };
     emit("finish", `${boat.name} 冲过终点`);
   }
@@ -110,6 +110,10 @@ function crossesLineUpward(prev: Vec2, pos: Vec2, line: LineSegment): boolean {
 function crossesLineDownward(prev: Vec2, pos: Vec2, line: LineSegment): boolean {
   const y = lineYAt(line);
   return prev.y <= y && pos.y > y && withinLineSpan(pos, line);
+}
+
+function crossesLine(prev: Vec2, pos: Vec2, line: LineSegment): boolean {
+  return (crossesLineUpward(prev, pos, line) || crossesLineDownward(prev, pos, line)) && withinLineSpan(pos, line);
 }
 
 function bearingDeg(from: Vec2, to: Vec2): number {

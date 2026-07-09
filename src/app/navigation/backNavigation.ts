@@ -8,8 +8,8 @@ const BACK_TARGET: Partial<Record<AppView, AppView>> = {
   lessonRules: "lessons",
   lessonRaceFlow: "lessons",
   setup: "home",
-  results: "home",
-  race: "setup"
+  results: "race",
+  race: "home"
 };
 
 /** Where the TV remote/gamepad "back" button should take you, if anywhere. */

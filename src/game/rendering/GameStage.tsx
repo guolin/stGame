@@ -9,7 +9,6 @@ import { GustLayer } from "./GustLayer";
 import { TacticalOverlayLayer } from "./TacticalOverlayLayer";
 import { WaterLayer } from "./WaterLayer";
 import { WindLayer } from "./WindLayer";
-import { WindZoneLayer } from "./WindZoneLayer";
 
 extend({ Container, Graphics, Text });
 
@@ -17,7 +16,6 @@ export function GameStage() {
   const boats = useGameStore((state) => state.boats);
   const course = useGameStore((state) => state.course);
   const activeBoatIds = useGameStore((state) => state.activeBoatIds);
-  const windZones = useGameStore((state) => state.windZones);
   const windField = useGameStore((state) => state.windField);
   const elapsedMs = useGameStore((state) => state.race.elapsedMs);
   const currents = useGameStore((state) => state.currents);
@@ -35,11 +33,10 @@ export function GameStage() {
       className="game-canvas"
     >
       <pixiContainer>
-        <WaterLayer />
-        <WindZoneLayer zones={windZones} />
+        <WaterLayer timeSec={elapsedMs / 1000} />
         <GustLayer windField={windField} timeSec={elapsedMs / 1000} visible={overlays.wind} />
         <CurrentLayer currents={currents} visible={overlays.current} />
-        <WindLayer wind={wind} visible={overlays.wind} />
+        <WindLayer windField={windField} timeSec={elapsedMs / 1000} visible={overlays.wind} />
         <CourseLayer course={course} />
         <TacticalOverlayLayer boats={activeBoats} overlays={overlays} wind={wind} course={course} />
         {activeBoats.map((boat) => (

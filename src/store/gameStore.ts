@@ -5,10 +5,10 @@ import { splitFrameIntoSteps } from "../sim/loop";
 import { SIM_DT, cloneInitialBoats, cloneInitialRace, stepSimulation } from "../sim/simulation";
 import { getCourse } from "../sim/course/courses";
 import type { CourseDefinition, CourseId } from "../sim/course/types";
-import { buildEnvironment } from "../sim/environment";
+import { buildEnvironment, buildWindZones } from "../sim/environment";
 import { createRulesEngineState } from "../sim/rules/rulesEngine";
 import type { RulesEngineState } from "../sim/rules/rulesEngine";
-import type { DifficultyId, EnvironmentId } from "../sim/environment";
+import type { DifficultyId, EnvironmentId, WindZoneCount } from "../sim/environment";
 import type { WindFieldConfig } from "../sim/wind/windField";
 
 export type SetupStep = "players" | "course" | "difficulty" | "environment" | "controllers";
@@ -22,6 +22,7 @@ type GameStore = {
   course: CourseDefinition;
   difficulty: DifficultyId;
   environment: EnvironmentId;
+  windZoneCount: WindZoneCount;
   windField: WindFieldConfig;
   wind: WindState;
   windZones: WindZoneState[];
@@ -38,6 +39,7 @@ type GameStore = {
   setCourse: (courseId: CourseId) => void;
   setDifficulty: (difficulty: DifficultyId) => void;
   setEnvironment: (environment: EnvironmentId) => void;
+  setWindZoneCount: (count: WindZoneCount) => void;
   startRace: () => void;
   setControl: (boatId: BoatId, control: Partial<BoatControls>) => void;
   setupRule10Demo: () => void;
@@ -48,7 +50,7 @@ type GameStore = {
   restart: () => void;
 };
 
-const BOAT_ORDER: BoatId[] = ["red", "blue", "green", "yellow"];
+const BOAT_ORDER: BoatId[] = ["red", "green", "yellow", "blue"];
 const NORMAL_TIME_SCALE = 1;
 
 function createEmptyControls(): Record<BoatId, BoatControls> {
@@ -66,11 +68,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
   view: "home",
   setupStep: "players",
   boats: cloneInitialBoats(getCourse("windwardLeeward")),
-  activeBoatIds: ["red", "blue"],
+  activeBoatIds: ["red", "green", "yellow", "blue"],
   race: cloneInitialRace(),
   course: getCourse("windwardLeeward"),
   difficulty: "standard",
   environment: "combo",
+  windZoneCount: 3,
   windField: INITIAL_WIND_FIELD,
   wind: { ...INITIAL_WIND },
   windZones: [],
@@ -119,19 +122,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setCourse: (courseId) => set({ course: getCourse(courseId) }),
   setDifficulty: (difficulty) => set({ difficulty }),
   setEnvironment: (environment) => set({ environment }),
+  setWindZoneCount: (windZoneCount) => set({ windZoneCount }),
   startRace: () => {
     const state = get();
-    const env = buildEnvironment(state.difficulty, state.environment);
+    const env = buildEnvironment("standard", "oscillating");
+    const windZones = buildWindZones(state.windZoneCount);
+    const windField = { ...env.windField, zones: windZones };
     frameAccumulator = 0;
     set({
       view: "race",
       boats: cloneInitialBoats(state.course),
       race: { ...cloneInitialRace(), countdownMs: env.countdownMs },
-      windField: env.windField,
-      wind: { ...INITIAL_WIND, speedKnots: env.windField.baseSpeedKnots },
-      windZones: env.windField.zones.map((zone) => ({ ...zone, bounds: { ...zone.bounds } })),
-      currents: env.currents,
-      overlays: env.overlays,
+      windField,
+      wind: { ...INITIAL_WIND, speedKnots: windField.baseSpeedKnots },
+      windZones: windZones.map((zone) => ({ ...zone, bounds: { ...zone.bounds } })),
+      currents: [],
+      overlays: { ...env.overlays, current: false },
       rulesState: createRulesEngineState(),
       controls: createEmptyControls(),
       timeScale: NORMAL_TIME_SCALE
@@ -181,7 +187,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }
     }));
   },
-  setTimeScale: (timeScale) => set({ timeScale: Math.max(1, Math.min(2, timeScale)) }),
+  setTimeScale: (timeScale) => set({ timeScale: Math.max(1, Math.min(4, timeScale)) }),
   restart: () => {
     const state = get();
     const env = buildEnvironment(state.difficulty, state.environment);

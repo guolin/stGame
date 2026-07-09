@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { useGameStore } from "../../store/gameStore";
 import type { BoatId } from "../types";
 
-const BOAT_ORDER: BoatId[] = ["red", "blue", "green", "yellow"];
+const BOAT_ORDER: BoatId[] = ["red", "green", "yellow", "blue"];
 const STEERING_AXIS = 0;
 const AXIS_DEADZONE = 0.02;
 const GAMEPAD_STEERING_SENSITIVITY = 2.6;

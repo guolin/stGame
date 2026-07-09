@@ -13,11 +13,14 @@ describe("getBackTarget", () => {
     expect(getBackTarget("intro")).toBe("home");
     expect(getBackTarget("lessons")).toBe("home");
     expect(getBackTarget("setup")).toBe("home");
-    expect(getBackTarget("results")).toBe("home");
   });
 
-  it("sends race back to setup so players can change match settings", () => {
-    expect(getBackTarget("race")).toBe("setup");
+  it("treats results as a race modal", () => {
+    expect(getBackTarget("results")).toBe("race");
+  });
+
+  it("sends race back to home because settings now live in the home modal", () => {
+    expect(getBackTarget("race")).toBe("home");
   });
 
   it("has no back target from home", () => {

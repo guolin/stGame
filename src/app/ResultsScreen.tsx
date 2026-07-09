@@ -6,8 +6,6 @@ export function ResultsScreen() {
   const activeBoatIds = useGameStore((state) => state.activeBoatIds);
   const race = useGameStore((state) => state.race);
   const setView = useGameStore((state) => state.setView);
-  const setSetupStep = useGameStore((state) => state.setSetupStep);
-  const startRace = useGameStore((state) => state.startRace);
 
   const finishedIds = race.finishOrder.map((entry) => entry.boatId);
   const activeBoats = boats.filter((boat) => activeBoatIds.includes(boat.id));
@@ -19,10 +17,11 @@ export function ResultsScreen() {
   const advice = buildAdvice(ranked.map((r) => r.boat));
 
   return (
-    <main className="demo-screen results-screen">
-      <section className="demo-panel wide">
+    <main className="results-screen">
+      <div className="modal-scrim result-scrim" role="presentation">
+      <section className="result-modal" role="dialog" aria-modal="true" aria-labelledby="results-title">
         <p className="eyebrow">赛后总结</p>
-        <h1>{race.winner ? `${activeBoats.find((b) => b.id === race.winner)?.name ?? ""} 获胜` : "比赛结束"}</h1>
+        <h1 id="results-title">{race.winner ? `${activeBoats.find((b) => b.id === race.winner)?.name ?? ""} 获胜` : "比赛结束"}</h1>
 
         <table className="results-table">
           <thead>
@@ -70,23 +69,12 @@ export function ResultsScreen() {
         </div>
 
         <div className="demo-actions">
-          <FocusableButton type="button" className="accent" onClick={startRace} autoFocus>
-            再来一局
-          </FocusableButton>
-          <FocusableButton
-            type="button"
-            onClick={() => {
-              setSetupStep("course");
-              setView("setup");
-            }}
-          >
-            换地图 / 设置
-          </FocusableButton>
-          <FocusableButton type="button" onClick={() => setView("home")}>
-            回到首页
+          <FocusableButton type="button" className="accent" onClick={() => setView("race")} autoFocus>
+            关闭
           </FocusableButton>
         </div>
       </section>
+      </div>
     </main>
   );
 }

@@ -2,6 +2,8 @@ import { useGameStore } from "../../store/gameStore";
 
 export function CurrentPanel() {
   const currents = useGameStore((state) => state.currents);
+  if (currents.length === 0) return null;
+
   const average = currents.reduce(
     (total, zone) => ({ x: total.x + zone.vector.x / currents.length, y: total.y + zone.vector.y / currents.length }),
     { x: 0, y: 0 }
