@@ -37,7 +37,7 @@ export function GameScreen() {
             <RuleEventLog />
             <CoachControls />
             {phase === "prestart" && (
-              <div className="controls-hint">手柄通道 1-4 控制船 1-4 · 键盘 P1 A/D · P2 ←/→ · P3 J/L · P4 小键盘 4/6 · Space 暂停 · H 隐藏界面</div>
+              <div className="controls-hint">手柄通道 1-4 控制船 1-4 · 键盘 P1 A/D · P2 ←/→ · P3 J/L · P4 小键盘 4/6 · Space 暂停</div>
             )}
           </>
         )}

@@ -19,8 +19,8 @@ export type RaceProgressResult = {
 
 /** Radius around a mark inside which the rounding sweep is tracked. */
 const ROUNDING_TRACK_RADIUS = 170;
-/** Bearing sweep (degrees) required to count as having rounded the mark. */
-const ROUNDING_SWEEP_DEG = 90;
+/** Minimal bearing sweep that proves the boat passed the mark on the required side. */
+const ROUNDING_PASS_SWEEP_DEG = 45;
 
 export function updateBoatRace({ boat, prevPosition, course, elapsedMs, startSignal }: RaceProgressInput): RaceProgressResult {
   const events: RaceEvent[] = [];
@@ -52,7 +52,7 @@ export function updateBoatRace({ boat, prevPosition, course, elapsedMs, startSig
     return { boat: next, events };
   }
 
-  // --- started: mark rounding with direction check ---
+  // --- started: mark rounding with normal race-side check ---
   if (next.finished) return { boat: next, events };
 
   const target = currentTarget(course, next.legIndex);
@@ -67,7 +67,7 @@ export function updateBoatRace({ boat, prevPosition, course, elapsedMs, startSig
       next = { ...next, markSweepDeg: next.markSweepDeg + delta, lastMarkBearingDeg: bearing };
     } else if (next.lastMarkBearingDeg !== undefined) {
       const requiredSign = mark.rounding === "port" ? -1 : 1;
-      const rounded = next.markSweepDeg * requiredSign >= ROUNDING_SWEEP_DEG;
+      const rounded = next.markSweepDeg * requiredSign >= ROUNDING_PASS_SWEEP_DEG;
       if (rounded) {
         next = { ...next, legIndex: next.legIndex + 1, markSweepDeg: 0, lastMarkBearingDeg: undefined };
         emit("mark", `${boat.name} 绕过 ${mark.label}`);

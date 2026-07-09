@@ -828,6 +828,32 @@ input {
   font-size: 19px;
 }
 
+.lesson-rule-card {
+  display: grid;
+  gap: 10px;
+}
+
+.lesson-rule-card section {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(3, 25, 42, 0.72);
+}
+
+.lesson-rule-card strong {
+  display: block;
+  color: #ffe082;
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+
+.lesson-rule-card p {
+  margin: 0;
+  color: #d5f2ff;
+  line-height: 1.45;
+  font-size: 14px;
+}
+
 .lesson-actions {
   display: flex;
   flex-wrap: wrap;

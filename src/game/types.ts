@@ -110,6 +110,7 @@ export type AppView =
   | "lessonBoat"
   | "lessonWind"
   | "lessonRules"
+  | "lessonRaceFlow"
   | "setup"
   | "race"
   | "results";

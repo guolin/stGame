@@ -49,6 +49,8 @@ type GameStore = {
 };
 
 const BOAT_ORDER: BoatId[] = ["red", "blue", "green", "yellow"];
+const NORMAL_TIME_SCALE = 1.6;
+const SLOW_MOTION_TIME_SCALE = 0.8;
 
 function createEmptyControls(): Record<BoatId, BoatControls> {
   return {
@@ -77,7 +79,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   rulesState: createRulesEngineState(),
   overlays: { ...INITIAL_OVERLAYS },
   hudVisible: true,
-  timeScale: 1,
+  timeScale: NORMAL_TIME_SCALE,
   controls: createEmptyControls(),
   tick: (frameDt) => {
     const state = get();
@@ -133,7 +135,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       overlays: env.overlays,
       rulesState: createRulesEngineState(),
       controls: createEmptyControls(),
-      timeScale: 1
+      timeScale: NORMAL_TIME_SCALE
     });
   },
   setControl: (boatId, control) => {
@@ -166,7 +168,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
         return boat;
       }),
       rulesState: createRulesEngineState(),
-      controls: createEmptyControls()
+      controls: createEmptyControls(),
+      timeScale: NORMAL_TIME_SCALE
     });
   },
   toggleOverlay: (key) => set((state) => ({ overlays: { ...state.overlays, [key]: !state.overlays[key] } })),
@@ -179,7 +182,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }
     }));
   },
-  toggleSlowMotion: () => set((state) => ({ timeScale: state.timeScale === 1 ? 0.5 : 1 })),
+  toggleSlowMotion: () =>
+    set((state) => ({
+      timeScale: state.timeScale === NORMAL_TIME_SCALE ? SLOW_MOTION_TIME_SCALE : NORMAL_TIME_SCALE
+    })),
   restart: () => {
     const state = get();
     const env = buildEnvironment(state.difficulty, state.environment);
@@ -189,7 +195,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       race: { ...cloneInitialRace(), countdownMs: env.countdownMs },
       rulesState: createRulesEngineState(),
       controls: createEmptyControls(),
-      timeScale: 1
+      timeScale: NORMAL_TIME_SCALE
     });
   }
 }));

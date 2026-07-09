@@ -13,12 +13,15 @@ import { useDpadGamepadNavigation } from "./gamepadNavigation";
  */
 export function useBackNavigation() {
   const view = useGameStore((state) => state.view);
+  const setSetupStep = useGameStore((state) => state.setSetupStep);
   const setView = useGameStore((state) => state.setView);
 
   const goBack = useCallback(() => {
     const target = getBackTarget(view);
-    if (target) setView(target);
-  }, [view, setView]);
+    if (!target) return;
+    if (view === "race" && target === "setup") setSetupStep("players");
+    setView(target);
+  }, [view, setSetupStep, setView]);
 
   useDpadGamepadNavigation(goBack);
 

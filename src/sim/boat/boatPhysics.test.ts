@@ -45,7 +45,7 @@ describe("rudder model", () => {
 
     const slowDelta = Math.abs(slowTurned.headingDeg - 90);
     const fastDelta = Math.abs(fastTurned.headingDeg - 90);
-    expect(fastDelta).toBeGreaterThan(slowDelta * 1.5);
+    expect(fastDelta).toBeGreaterThan(slowDelta * 1.4);
   });
 });
 

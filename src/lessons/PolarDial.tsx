@@ -1,12 +1,14 @@
 import { useMemo } from "react";
 import type { BoatType } from "../sim/polar/polar";
 import { getNoGoAngle, getPolarSpeed } from "../sim/polar/polar";
+import type { Tack } from "../sim/boat/boatPhysics";
 
 type PolarDialProps = {
   boatType: BoatType;
   twsKnots: number;
   twaDeg: number;
   stwKnots: number;
+  tack: Tack;
 };
 
 const SIZE = 320;
@@ -18,7 +20,7 @@ const MAX_RADIUS = SIZE / 2 - 28;
  * angle; the glowing dot is where the boat is right now. Wind blows from the
  * top of the dial, matching the race view.
  */
-export function PolarDial({ boatType, twsKnots, twaDeg, stwKnots }: PolarDialProps) {
+export function PolarDial({ boatType, twsKnots, twaDeg, stwKnots, tack }: PolarDialProps) {
   const maxSpeed = useMemo(() => {
     let max = 0.1;
     for (let angle = 0; angle <= 180; angle += 5) {
@@ -45,11 +47,12 @@ export function PolarDial({ boatType, twsKnots, twaDeg, stwKnots }: PolarDialPro
 
   const noGo = getNoGoAngle(boatType);
   const currentSpeed = getPolarSpeed(boatType, twsKnots, twaDeg);
-  const dot = polarPoint(twaDeg, Math.min(1.05, currentSpeed / maxSpeed));
+  const signedTwaDeg = tack === "starboard" ? -twaDeg : twaDeg;
+  const dot = polarPoint(signedTwaDeg, Math.min(1.05, currentSpeed / maxSpeed));
   const inNoGo = twaDeg < noGo;
 
-  const noGoLeft = polarPoint(noGo, 1.08);
-  const noGoRight = { x: 2 * CENTER - noGoLeft.x, y: noGoLeft.y };
+  const noGoLeft = polarPoint(-noGo, 1.08);
+  const noGoRight = polarPoint(noGo, 1.08);
 
   return (
     <svg className="polar-dial" viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label="船速极曲线">
@@ -83,7 +86,7 @@ export function PolarDial({ boatType, twsKnots, twaDeg, stwKnots }: PolarDialPro
   );
 }
 
-/** Angle 0 = pointing up (into the wind), mirrored to the right side. */
+/** Angle 0 = pointing up into the wind; negative angles render to port/left. */
 function polarPoint(twaDeg: number, normalizedRadius: number) {
   const rad = (twaDeg * Math.PI) / 180;
   return {

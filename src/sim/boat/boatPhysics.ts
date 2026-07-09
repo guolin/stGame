@@ -45,12 +45,12 @@ export type BoatPhysicsInput = {
 };
 
 export const MAX_RUDDER_DEG = 32;
-const RUDDER_SLEW_DEG_PER_SEC = 130;
-const RUDDER_CENTERING_DEG_PER_SEC = 70;
-const TURN_RATE_PER_RUDDER_DEG = 2.6;
+const RUDDER_SLEW_DEG_PER_SEC = 520;
+const RUDDER_CENTERING_DEG_PER_SEC = 420;
+const TURN_RATE_PER_RUDDER_DEG = 4.15;
 const REFERENCE_SPEED = 4 * PIXELS_PER_KNOT;
-const ACCELERATION = 0.55;
-const DECELERATION = 1.15;
+const ACCELERATION = 1.15;
+const DECELERATION = 1.6;
 /** Head to wind the hull coasts on momentum instead of braking hard. */
 const NO_GO_COAST_DECELERATION = 0.28;
 /** Rudder authority floor: even a slow hull can push its bow through a tack. */

@@ -17,7 +17,8 @@ import { PolarDial } from "./PolarDial";
 import { useFixedStepLoop } from "./useFixedStepLoop";
 import { FocusableButton } from "../app/navigation/FocusableButton";
 
-const WIND = { directionDeg: 0, speedKnots: 12 };
+const WIND_DIRECTION_DEG = 0;
+const DEFAULT_WIND_SPEED_KNOTS = 12;
 const CURRENT: Vec2 = { x: 16, y: 4 };
 const PLAYER_SPAWN = { position: { x: 1000, y: 1500 }, headingDeg: 50 };
 const GHOST_SPAWN = { position: { x: 1800, y: 1500 }, headingDeg: 310 };
@@ -33,13 +34,13 @@ export function LessonBoatScreen() {
   const trackRef = useRef<Vec2[]>([]);
   const ghostTackRef = useRef<"left" | "right">("right");
   const keysRef = useRef<{ left: boolean; right: boolean }>({ left: false, right: false });
-  const rudderRef = useRef(0);
+  const windSpeedRef = useRef(DEFAULT_WIND_SPEED_KNOTS);
 
   const [frame, setFrame] = useState(0);
-  const [rudder, setRudder] = useState(0);
+  const [windSpeed, setWindSpeed] = useState(DEFAULT_WIND_SPEED_KNOTS);
   const [currentOn, setCurrentOn] = useState(false);
   const [raceResult, setRaceResult] = useState<RaceResult>(undefined);
-  rudderRef.current = rudder;
+  windSpeedRef.current = windSpeed;
   const currentOnRef = useRef(currentOn);
   currentOnRef.current = currentOn;
   const raceResultRef = useRef(raceResult);
@@ -64,16 +65,16 @@ export function LessonBoatScreen() {
 
   useFixedStepLoop(() => {
     const current = currentOnRef.current ? CURRENT : { x: 0, y: 0 };
+    const wind = { directionDeg: WIND_DIRECTION_DEG, speedKnots: windSpeedRef.current };
 
     // --- player boat ---
     const keyRudder = (keysRef.current.right ? 1 : 0) - (keysRef.current.left ? 1 : 0);
-    const command = keyRudder !== 0 ? keyRudder : rudderRef.current;
     motionRef.current = clampToWorld(
       stepBoatPhysics({
         motion: motionRef.current,
-        rudder: command,
+        rudder: keyRudder,
         boatType: "op",
-        wind: WIND,
+        wind,
         current,
         penaltyFactor: 1,
         dt: 1 / 60
@@ -99,7 +100,7 @@ export function LessonBoatScreen() {
           motion: ghost,
           rudder: clamp(delta * 0.06, -1, 1),
           boatType: "op",
-          wind: WIND,
+          wind,
           current,
           penaltyFactor: 1,
           dt: 1 / 60
@@ -134,6 +135,7 @@ export function LessonBoatScreen() {
   const motion = motionRef.current;
   const stwKnots = motion.speed / PIXELS_PER_KNOT;
   const sogKnots = Math.hypot(motion.velocity.x, motion.velocity.y) / PIXELS_PER_KNOT;
+  const wind = { directionDeg: WIND_DIRECTION_DEG, speedKnots: windSpeed };
   const noGo = getNoGoAngle("op");
   const inNoGo = motion.twaDeg < noGo;
 
@@ -167,8 +169,8 @@ export function LessonBoatScreen() {
         graphics.stroke({ color: "#ffd34d", alpha: 0.65, width: 4 });
       }
 
-      const left = headingToVector(WIND.directionDeg - noGo);
-      const right = headingToVector(WIND.directionDeg + noGo);
+      const left = headingToVector(WIND_DIRECTION_DEG - noGo);
+      const right = headingToVector(WIND_DIRECTION_DEG + noGo);
       const radius = 260;
       graphics.moveTo(playerBoat.position.x, playerBoat.position.y);
       graphics.lineTo(playerBoat.position.x + left.x * radius, playerBoat.position.y + left.y * radius);
@@ -200,7 +202,7 @@ export function LessonBoatScreen() {
         <section className="lesson-stage-panel">
           <LessonStage>
             <WaterLayer />
-            <WindLayer wind={{ ...WIND, oscillationDeg: 0 }} visible />
+            <WindLayer wind={{ ...wind, oscillationDeg: 0 }} visible />
             <GraphicsShape draw={drawOverlay} />
             {ghostBoat && <BoatSprite boat={ghostBoat} />}
             <BoatSprite boat={playerBoat} />
@@ -215,19 +217,19 @@ export function LessonBoatScreen() {
         </section>
 
         <aside className="lesson-side">
-          <PolarDial boatType="op" twsKnots={WIND.speedKnots} twaDeg={motion.twaDeg} stwKnots={stwKnots} />
+          <PolarDial boatType="op" twsKnots={windSpeed} twaDeg={motion.twaDeg} stwKnots={stwKnots} tack={motion.tack} />
 
           <div className={`lesson-status ${inNoGo ? "alert" : ""}`}>{status}</div>
 
           <label className="lesson-slider">
-            舵杆 {Math.round(rudder * 100)}%（或按住 A / D）
+            风速 {windSpeed.toFixed(1)} kt
             <input
               type="range"
-              min="-100"
-              max="100"
-              value={Math.round(rudder * 100)}
-              onChange={(event) => setRudder(Number(event.target.value) / 100)}
-              onPointerUp={() => setRudder(0)}
+              min="4"
+              max="20"
+              step="0.5"
+              value={windSpeed}
+              onChange={(event) => setWindSpeed(Number(event.target.value))}
             />
           </label>
 
@@ -240,6 +242,9 @@ export function LessonBoatScreen() {
             </span>
             <span>
               TWA <strong>{Math.round(motion.twaDeg)}</strong>°
+            </span>
+            <span>
+              TWS <strong>{windSpeed.toFixed(1)}</strong> kt
             </span>
             <span>{motion.tack === "starboard" ? "右舷受风" : "左舷受风"}</span>
           </div>

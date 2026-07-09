@@ -1,5 +1,6 @@
 import type { BoatState, CurrentZone, OverlaySettings, RaceState, WindState, WindZoneState } from "./types";
 import type { WindFieldConfig } from "../sim/wind/windField";
+import { PIXELS_PER_KNOT } from "../sim/boat/units";
 
 export const WORLD = {
   width: 2800,
@@ -21,6 +22,7 @@ export const INITIAL_WIND: WindState = {
   oscillationDeg: 0
 };
 
+const INITIAL_BOAT_SPEED = 3.2 * PIXELS_PER_KNOT;
 
 export const INITIAL_OVERLAYS: OverlaySettings = {
   wind: true,
@@ -37,7 +39,7 @@ export const INITIAL_BOATS: BoatState[] = [
     color: "#ff533d",
     position: { x: 1260, y: 1670 },
     headingDeg: 350,
-    speed: 0,
+    speed: INITIAL_BOAT_SPEED,
     velocity: { x: 0, y: 0 },
     boatType: "op",
     rudderAngleDeg: 0,
@@ -60,7 +62,7 @@ export const INITIAL_BOATS: BoatState[] = [
     color: "#1597ff",
     position: { x: 1540, y: 1670 },
     headingDeg: 10,
-    speed: 0,
+    speed: INITIAL_BOAT_SPEED,
     velocity: { x: 0, y: 0 },
     boatType: "op",
     rudderAngleDeg: 0,
@@ -83,7 +85,7 @@ export const INITIAL_BOATS: BoatState[] = [
     color: "#43d17a",
     position: { x: 1120, y: 1720 },
     headingDeg: 342,
-    speed: 0,
+    speed: INITIAL_BOAT_SPEED,
     velocity: { x: 0, y: 0 },
     boatType: "op",
     rudderAngleDeg: 0,
@@ -106,7 +108,7 @@ export const INITIAL_BOATS: BoatState[] = [
     color: "#ffd34d",
     position: { x: 1680, y: 1720 },
     headingDeg: 18,
-    speed: 0,
+    speed: INITIAL_BOAT_SPEED,
     velocity: { x: 0, y: 0 },
     boatType: "op",
     rudderAngleDeg: 0,
