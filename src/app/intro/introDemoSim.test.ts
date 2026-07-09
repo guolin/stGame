@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
-  DEMO_BASE_WIND_DEG,
-  DEMO_FIRST_SHIFT_DEG,
   DEMO_MARK,
+  DEMO_SHIFT_FROM_DEG,
+  DEMO_SHIFT_TO_DEG,
   ZONE_DEMO_ZONES,
-  advanceIntroDemoMode,
   boatSpeedKnots,
   chooseAdaptiveTack,
   chooseCornerTack,
@@ -18,31 +17,12 @@ import {
 } from "./introDemoSim";
 
 describe("demoWindOscDeg", () => {
-  it("holds steady wind during the split phase", () => {
-    expect(demoWindOscDeg("split", 0)).toBe(0);
-    expect(demoWindOscDeg("split", 30)).toBe(0);
-  });
-
-  it("ramps right during the shift, caps at the target and stays there", () => {
-    expect(demoWindOscDeg("shift", 0)).toBe(0);
-    expect(demoWindOscDeg("shift", 2)).toBeGreaterThan(0);
-    expect(demoWindOscDeg("shift", 60)).toBe(DEMO_FIRST_SHIFT_DEG);
-    expect(demoWindOscDeg("shift", 500)).toBe(DEMO_FIRST_SHIFT_DEG);
-  });
-});
-
-describe("mode transition keeps the wind continuous", () => {
-  it("split → shift starts the ramp from the base direction", () => {
-    let state = createIntroDemoState();
-    state = stepIntroDemo(state, 4);
-    expect(state.windDeg).toBeCloseTo(DEMO_BASE_WIND_DEG, 6);
-
-    state = advanceIntroDemoMode(state);
-    expect(state.mode).toBe("shift");
-    expect(state.windDeg).toBeCloseTo(DEMO_BASE_WIND_DEG, 6);
-
-    state = stepIntroDemo(state, 1 / 60);
-    expect(Math.abs(state.windOscDeg)).toBeLessThan(1);
+  it("starts left of the base direction and veers through to the right cap", () => {
+    expect(demoWindOscDeg(0)).toBe(DEMO_SHIFT_FROM_DEG);
+    expect(demoWindOscDeg(2)).toBe(DEMO_SHIFT_FROM_DEG);
+    expect(demoWindOscDeg(10)).toBeGreaterThan(DEMO_SHIFT_FROM_DEG);
+    expect(demoWindOscDeg(60)).toBe(DEMO_SHIFT_TO_DEG);
+    expect(demoWindOscDeg(500)).toBe(DEMO_SHIFT_TO_DEG);
   });
 });
 
@@ -87,20 +67,20 @@ describe("leadMeters", () => {
 });
 
 describe("shift demo integration", () => {
-  it("red beats blue to the mark by playing the single shift", () => {
+  it("both boats really reach the mark, red clearly first", () => {
     let state = createIntroDemoState();
     const dt = 1 / 60;
 
-    // Split phase: boats sail apart for a few seconds.
-    for (let i = 0; i < 6 * 60; i += 1) state = stepIntroDemo(state, dt);
+    // Boats split off the line: red right, blue left.
+    for (let i = 0; i < 4 * 60; i += 1) state = stepIntroDemo(state, dt);
     expect(state.red.motion.position.x).toBeGreaterThan(state.blue.motion.position.x);
 
-    // Single persistent shift, then sail it out to the mark.
-    state = advanceIntroDemoMode(state);
     for (let i = 0; i < 120 * 60 && !state.finished; i += 1) state = stepIntroDemo(state, dt);
 
     expect(state.finished).toBe(true);
-    expect(leadMeters(state.red.motion.position, state.blue.motion.position)).toBeGreaterThan(15);
+    expect(state.redAtMarkSec).toBeDefined();
+    expect(state.blueAtMarkSec).toBeDefined();
+    expect(state.blueAtMarkSec! - state.redAtMarkSec!).toBeGreaterThan(5);
   });
 });
 

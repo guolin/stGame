@@ -18,8 +18,6 @@ import { getLocalWind } from "../../sim/wind/windField";
  * patch — planning beats pointing.
  */
 
-export type IntroDemoMode = "split" | "shift";
-
 export type DemoBoat = {
   motion: BoatMotionState;
   track: Vec2[];
@@ -29,25 +27,30 @@ export type DemoBoat = {
 
 export type IntroDemoState = {
   simTimeSec: number;
-  mode: IntroDemoMode;
-  modeStartSec: number;
   windDeg: number;
   /** Deviation from the base direction, for the HUD readout. */
   windOscDeg: number;
   red: DemoBoat;
   blue: DemoBoat;
+  /** Race time (sim seconds) each boat reached mark 1, once it has. */
+  redAtMarkSec?: number;
+  blueAtMarkSec?: number;
   finished: boolean;
 };
 
 export const DEMO_BASE_WIND_DEG = 0;
 export const DEMO_WIND_SPEED_KNOTS = 12;
-export const DEMO_FIRST_SHIFT_DEG = 25;
-/** Gentle compression while boats split, faster once the story is moving. */
-export const DEMO_TIME_SCALE: Record<IntroDemoMode, number> = { split: 2, shift: 3 };
+/** The shift starts left of the base and veers through it: 355° → 15°. */
+export const DEMO_SHIFT_FROM_DEG = -5;
+export const DEMO_SHIFT_TO_DEG = 15;
+export const DEMO_TIME_SCALE = 3;
 export const DEMO_MARK: Vec2 = { x: 1400, y: 300 };
 export const DEMO_START_Y = 1620;
 
-const SHIFT_RATE_DEG_PER_SEC = 2.5;
+const SHIFT_GRACE_SEC = 4;
+const SHIFT_RATE_DEG_PER_SEC = 1.2;
+/** Boats commit to their side off the line before sailing the shifts. */
+const SPLIT_HOLD_SEC = 14;
 const CLOSE_HAULED_DEG = 45;
 const TACK_HYSTERESIS_DEG = 12;
 const ARENA_LEFT = 380;
@@ -80,27 +83,18 @@ function startingBoats(): { red: DemoBoat; blue: DemoBoat } {
 export function createIntroDemoState(): IntroDemoState {
   return {
     simTimeSec: 0,
-    mode: "split",
-    modeStartSec: 0,
-    windDeg: DEMO_BASE_WIND_DEG,
-    windOscDeg: 0,
+    windDeg: normalizeDeg(DEMO_BASE_WIND_DEG + DEMO_SHIFT_FROM_DEG),
+    windOscDeg: DEMO_SHIFT_FROM_DEG,
     ...startingBoats(),
     finished: false
   };
 }
 
-export function demoWindOscDeg(mode: IntroDemoMode, timeInModeSec: number): number {
-  switch (mode) {
-    case "split":
-      return 0;
-    case "shift":
-      return Math.min(DEMO_FIRST_SHIFT_DEG, SHIFT_RATE_DEG_PER_SEC * timeInModeSec);
-  }
-}
-
-export function advanceIntroDemoMode(state: IntroDemoState): IntroDemoState {
-  if (state.mode !== "split") return state;
-  return { ...state, mode: "shift", modeStartSec: state.simTimeSec };
+/** One continuous veer from 355° to 15°, starting right away after a short grace. */
+export function demoWindOscDeg(timeSec: number): number {
+  const swing = DEMO_SHIFT_TO_DEG - DEMO_SHIFT_FROM_DEG;
+  const progressed = Math.max(0, timeSec - SHIFT_GRACE_SEC) * SHIFT_RATE_DEG_PER_SEC;
+  return DEMO_SHIFT_FROM_DEG + Math.min(swing, progressed);
 }
 
 /** Close-hauled compass heading for a tack: wind over port side means heading right of the wind. */
@@ -149,34 +143,41 @@ export function boatSpeedKnots(boat: DemoBoat): number {
 export function stepIntroDemo(state: IntroDemoState, dt: number): IntroDemoState {
   if (state.finished) return state;
 
-  const substeps = DEMO_TIME_SCALE[state.mode];
-  let { simTimeSec, windDeg, windOscDeg, red, blue } = state;
+  let { simTimeSec, windDeg, windOscDeg, red, blue, redAtMarkSec, blueAtMarkSec } = state;
   let finished: boolean = state.finished;
 
-  for (let i = 0; i < substeps && !finished; i += 1) {
+  for (let i = 0; i < DEMO_TIME_SCALE && !finished; i += 1) {
     simTimeSec += dt;
-    windOscDeg = demoWindOscDeg(state.mode, simTimeSec - state.modeStartSec);
+    windOscDeg = demoWindOscDeg(simTimeSec);
     windDeg = normalizeDeg(DEMO_BASE_WIND_DEG + windOscDeg);
     const wind: LocalWind = { directionDeg: windDeg, speedKnots: DEMO_WIND_SPEED_KNOTS };
 
-    const redTack =
-      state.mode === "split"
-        ? chooseCornerTack(red.motion.position.x, red.tackHeld)
-        : chooseAdaptiveTack({
-            position: red.motion.position,
-            currentTack: red.tackHeld,
-            windDeg,
-            mark: DEMO_MARK,
-            hysteresisDeg: TACK_HYSTERESIS_DEG
-          });
-    const blueTack = chooseCornerTack(blue.motion.position.x, blue.tackHeld);
-
-    red = stepDemoBoat(red, redTack, wind, dt);
-    blue = stepDemoBoat(blue, blueTack, wind, dt);
-    finished = isAtMark(red.motion.position);
+    if (redAtMarkSec === undefined) {
+      red = stepDemoBoat(red, chooseMarkTack(red, windDeg, simTimeSec), wind, dt);
+      if (isAtMark(red.motion.position)) redAtMarkSec = simTimeSec;
+    }
+    if (blueAtMarkSec === undefined) {
+      blue = stepDemoBoat(blue, chooseMarkTack(blue, windDeg, simTimeSec), wind, dt);
+      if (isAtMark(blue.motion.position)) blueAtMarkSec = simTimeSec;
+    }
+    finished = redAtMarkSec !== undefined && blueAtMarkSec !== undefined;
   }
 
-  return { ...state, simTimeSec, windDeg, windOscDeg, red, blue, finished };
+  return { ...state, simTimeSec, windDeg, windOscDeg, red, blue, redAtMarkSec, blueAtMarkSec, finished };
+}
+
+/** Sail for the mark, holding the chosen side off the line, with an arena guard. */
+function chooseMarkTack(boat: DemoBoat, windDeg: number, simTimeSec: number): Tack {
+  const guarded = chooseCornerTack(boat.motion.position.x, boat.tackHeld);
+  if (guarded !== boat.tackHeld) return guarded;
+  if (simTimeSec < SPLIT_HOLD_SEC) return boat.tackHeld;
+  return chooseAdaptiveTack({
+    position: boat.motion.position,
+    currentTack: boat.tackHeld,
+    windDeg,
+    mark: DEMO_MARK,
+    hysteresisDeg: TACK_HYSTERESIS_DEG
+  });
 }
 
 // ---------- zone demo (act 2) ----------

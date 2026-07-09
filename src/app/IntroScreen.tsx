@@ -21,7 +21,6 @@ import {
   DEMO_MARK,
   DEMO_START_Y,
   DEMO_WIND_SPEED_KNOTS,
-  advanceIntroDemoMode,
   boatSpeedKnots,
   chooseCornerTack,
   createIntroDemoState,
@@ -68,7 +67,7 @@ const SLIDES: Slide[] = [
   {
     kind: "shift",
     corner: "看懂风摆",
-    line: "两船分边去 1 标。风慢慢右摆——同样的船，位置对了就是快。"
+    line: "两船分边去 1 标。风从 355° 一路摆到 15°——同样的船，站对边就是先到。"
   },
   {
     kind: "zones",
@@ -218,10 +217,6 @@ export function IntroScreen() {
   };
 
   const next = () => {
-    if (slide === SHIFT_SLIDE && shiftRef.current.mode === "split") {
-      shiftRef.current = advanceIntroDemoMode(shiftRef.current);
-      return;
-    }
     goTo(slide + 1);
   };
 
@@ -395,13 +390,19 @@ export function IntroScreen() {
               风摆 {oscRounded >= 0 ? "+" : ""}
               {oscRounded}°
             </div>
-            {shift.mode === "split" && <div className="hud-chip hud-chip-accent">按 → 触发风摆</div>}
-            {shift.mode !== "split" && !shift.finished && (
+            {shift.redAtMarkSec === undefined && Math.abs(lead) >= 2 && (
               <div className={`hud-chip ${lead >= 0 ? "hud-chip-red" : ""}`}>
                 红船{lead >= 0 ? "领先" : "落后"} {Math.abs(Math.round(lead))} 米
               </div>
             )}
-            {shift.finished && <div className="hud-chip hud-chip-finish">红船到 1 标！领先 {Math.abs(Math.round(lead))} 米</div>}
+            {shift.redAtMarkSec !== undefined && !shift.finished && (
+              <div className="hud-chip hud-chip-finish">红船到 1 标！</div>
+            )}
+            {shift.finished && (
+              <div className="hud-chip hud-chip-finish">
+                红船先到 · 蓝船晚了 {Math.round((shift.blueAtMarkSec ?? 0) - (shift.redAtMarkSec ?? 0))} 秒
+              </div>
+            )}
           </div>
         )}
 
