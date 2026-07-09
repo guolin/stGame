@@ -2,15 +2,29 @@ import { describe, expect, it } from "vitest";
 import { COURSE_IDS, getCourse } from "./courses";
 
 describe("course definitions", () => {
-  it("provides the four PRD courses", () => {
-    expect(COURSE_IDS).toEqual(["simple", "io", "triangle", "complex4"]);
+  it("provides the three race courses", () => {
+    expect(COURSE_IDS).toEqual(["simple", "windwardLeeward", "ioTwoLap"]);
   });
 
   it("gives each course the documented number of marks", () => {
     expect(getCourse("simple").marks).toHaveLength(1);
-    expect(getCourse("io").marks).toHaveLength(2);
-    expect(getCourse("triangle").marks).toHaveLength(3);
-    expect(getCourse("complex4").marks).toHaveLength(4);
+    expect(getCourse("windwardLeeward").marks).toHaveLength(3);
+    expect(getCourse("ioTwoLap").marks).toHaveLength(2);
+  });
+
+  it("places course 2 mark 3 below the starting line with a downwind finish", () => {
+    const course = getCourse("windwardLeeward");
+    const startY = (course.startLine.left.y + course.startLine.right.y) / 2;
+    const finishY = (course.finishLine.left.y + course.finishLine.right.y) / 2;
+    const mark3 = course.marks.find((mark) => mark.id === "m3")!;
+
+    expect(course.legMarkIds).toEqual(["m1", "m2", "m3"]);
+    expect(mark3.position.y).toBeGreaterThan(startY);
+    expect(finishY).toBeGreaterThan(mark3.position.y);
+  });
+
+  it("uses a two-lap IO order for course 3", () => {
+    expect(getCourse("ioTwoLap").legMarkIds).toEqual(["m1", "m2", "m1", "m2"]);
   });
 
   it("only references defined marks in the leg order", () => {

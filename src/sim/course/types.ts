@@ -9,7 +9,7 @@ export type CourseMark = {
   rounding: MarkRounding;
 };
 
-export type CourseId = "simple" | "io" | "triangle" | "complex4";
+export type CourseId = "simple" | "windwardLeeward" | "ioTwoLap";
 
 export type SpawnPoint = {
   position: Vec2;
