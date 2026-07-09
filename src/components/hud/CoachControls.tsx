@@ -15,12 +15,17 @@ export function CoachControls() {
   const activeBoatIds = useGameStore((state) => state.activeBoatIds);
   const timeScale = useGameStore((state) => state.timeScale);
   const setBoatCount = useGameStore((state) => state.setBoatCount);
+  const setSetupStep = useGameStore((state) => state.setSetupStep);
   const setView = useGameStore((state) => state.setView);
   const setupRule10Demo = useGameStore((state) => state.setupRule10Demo);
   const toggleOverlay = useGameStore((state) => state.toggleOverlay);
   const togglePause = useGameStore((state) => state.togglePause);
   const toggleSlowMotion = useGameStore((state) => state.toggleSlowMotion);
   const restart = useGameStore((state) => state.restart);
+  const returnToSetup = () => {
+    setSetupStep("players");
+    setView("setup");
+  };
 
   return (
     <section className="coach-controls">
@@ -28,12 +33,12 @@ export function CoachControls() {
         暂停/继续
       </FocusableButton>
       <FocusableButton type="button" onClick={toggleSlowMotion}>
-        {timeScale === 1 ? "慢放" : "正常速度"}
+        {timeScale > 1 ? "慢放" : "正常速度"}
       </FocusableButton>
       <FocusableButton type="button" onClick={restart}>
         重开
       </FocusableButton>
-      <FocusableButton type="button" onClick={() => setView("setup")}>
+      <FocusableButton type="button" onClick={returnToSetup}>
         设置
       </FocusableButton>
       <FocusableButton type="button" onClick={() => setView("results")}>

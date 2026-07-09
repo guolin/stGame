@@ -6,6 +6,7 @@ describe("getBackTarget", () => {
     expect(getBackTarget("lessonBoat")).toBe("lessons");
     expect(getBackTarget("lessonWind")).toBe("lessons");
     expect(getBackTarget("lessonRules")).toBe("lessons");
+    expect(getBackTarget("lessonRaceFlow")).toBe("lessons");
   });
 
   it("sends top-level screens back to home", () => {
@@ -15,8 +16,11 @@ describe("getBackTarget", () => {
     expect(getBackTarget("results")).toBe("home");
   });
 
-  it("has no back target from home or during a race", () => {
+  it("sends race back to setup so players can change match settings", () => {
+    expect(getBackTarget("race")).toBe("setup");
+  });
+
+  it("has no back target from home", () => {
     expect(getBackTarget("home")).toBeUndefined();
-    expect(getBackTarget("race")).toBeUndefined();
   });
 });

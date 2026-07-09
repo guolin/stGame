@@ -19,6 +19,11 @@ export function LessonMenuScreen() {
       title: "比赛规则 · 你来当裁判",
       blurb: "两船相遇前自动暂停，你来判谁避让，再看自动裁判揭晓",
       view: "lessonRules" as const
+    },
+    {
+      title: "启航 / 绕标规则",
+      blurb: "选择讲解启航或绕标，旁边直接写清楚比赛判定规则",
+      view: "lessonRaceFlow" as const
     }
   ];
 
@@ -34,10 +39,6 @@ export function LessonMenuScreen() {
               <span>{lesson.blurb}</span>
             </FocusableButton>
           ))}
-          <FocusableButton type="button" onClick={() => setView("setup")}>
-            <strong>去比赛</strong>
-            <span>学完了？选人数、场地开一局</span>
-          </FocusableButton>
         </div>
         <div className="demo-actions">
           <FocusableButton type="button" onClick={() => setView("home")}>

@@ -5,6 +5,7 @@ import { ResultsScreen } from "./ResultsScreen";
 import { SetupScreen } from "./SetupScreen";
 import { LessonBoatScreen } from "../lessons/LessonBoatScreen";
 import { LessonMenuScreen } from "../lessons/LessonMenuScreen";
+import { LessonRaceFlowScreen } from "../lessons/LessonRaceFlowScreen";
 import { LessonRulesScreen } from "../lessons/LessonRulesScreen";
 import { LessonWindScreen } from "../lessons/LessonWindScreen";
 import { useGameStore } from "../store/gameStore";
@@ -24,6 +25,7 @@ export function App() {
   if (view === "lessonBoat") return <LessonBoatScreen />;
   if (view === "lessonWind") return <LessonWindScreen />;
   if (view === "lessonRules") return <LessonRulesScreen />;
+  if (view === "lessonRaceFlow") return <LessonRaceFlowScreen />;
   if (view === "intro") return <IntroScreen />;
   return <HomeScreen />;
 }

@@ -113,6 +113,19 @@ describe("mark rounding direction", () => {
     expect(events.some((e) => e.kind === "mark")).toBe(true);
   });
 
+  it("counts a normal pass on the required side without requiring a full 90 degree arc", () => {
+    const m = mark.position;
+    const path = [
+      { x: m.x, y: m.y + 150 },
+      { x: m.x + 80, y: m.y + 100 },
+      { x: m.x + 130, y: m.y },
+      { x: m.x + 190, y: m.y }
+    ];
+    const { boat, events } = roundMark(path);
+    expect(boat.legIndex).toBe(1);
+    expect(events.some((e) => e.kind === "mark")).toBe(true);
+  });
+
   it("does not advance when the boat passes the mark on the wrong side", () => {
     const m = mark.position;
     const path = [

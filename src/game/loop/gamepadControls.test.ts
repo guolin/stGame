@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { gamepadAxisToRudder, resolveDigitalRudderOverride } from "./gamepadControls";
+import { gamepadAxisToRudder, resolveDigitalRudderOverride, stepDigitalRudder } from "./gamepadControls";
 
 describe("gamepadAxisToRudder", () => {
   it("amplifies axis 0 direction and magnitude as continuous rudder input", () => {
-    expect(gamepadAxisToRudder(0.5)).toBe(0.8);
-    expect(gamepadAxisToRudder(-0.25)).toBe(-0.4);
+    expect(gamepadAxisToRudder(0.5)).toBe(1);
+    expect(gamepadAxisToRudder(-0.25)).toBe(-0.65);
   });
 
   it("stops steering near center and clamps out-of-range values", () => {
     expect(gamepadAxisToRudder(0)).toBe(0);
-    expect(gamepadAxisToRudder(0.04)).toBe(0);
+    expect(gamepadAxisToRudder(0.01)).toBe(0);
     expect(gamepadAxisToRudder(2)).toBe(1);
     expect(gamepadAxisToRudder(-2)).toBe(-1);
   });
@@ -44,5 +44,18 @@ describe("resolveDigitalRudderOverride", () => {
   it("returns 0 for an unmapped channel or missing gamepad", () => {
     expect(resolveDigitalRudderOverride(pad([2]), 4)).toBe(0);
     expect(resolveDigitalRudderOverride(undefined, 0)).toBe(0);
+  });
+});
+
+describe("stepDigitalRudder", () => {
+  it("ramps while held so digital buttons behave like a continuous rudder", () => {
+    expect(stepDigitalRudder(0, 1, 0.1)).toBeCloseTo(0.7, 6);
+    expect(stepDigitalRudder(0.7, 1, 0.1)).toBe(1);
+    expect(stepDigitalRudder(0, -1, 0.1)).toBeCloseTo(-0.7, 6);
+  });
+
+  it("returns smoothly to center after release", () => {
+    expect(stepDigitalRudder(1, 0, 0.1)).toBeCloseTo(0.6, 6);
+    expect(stepDigitalRudder(0.2, 0, 0.1)).toBe(0);
   });
 });
