@@ -1212,6 +1212,7 @@ input {
   font-size: 22px;
   line-height: 1.55;
   color: #dff7ff;
+  white-space: pre-line;
 }
 
 .intro-dots {
@@ -1260,4 +1261,124 @@ input {
   outline: 3px solid #ffe082;
   outline-offset: 2px;
   box-shadow: 0 0 0 6px rgba(255, 224, 130, 0.25);
+}
+
+/* ---------- intro stage demo ---------- */
+
+.intro-brand {
+  font-size: 92px;
+  letter-spacing: 0.02em;
+  color: #ffe082;
+}
+
+.intro-backdrop-full {
+  opacity: 1;
+}
+
+.intro-stage-hud {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 28px 36px;
+  pointer-events: none;
+}
+
+.intro-stage-hud .stage-bottom,
+.intro-stage-hud button {
+  pointer-events: auto;
+}
+
+.stage-corner {
+  max-width: 560px;
+  padding: 18px 22px;
+  border-radius: 14px;
+  background: rgba(4, 22, 36, 0.72);
+  backdrop-filter: blur(2px);
+}
+
+.stage-corner h2 {
+  margin: 6px 0 8px;
+  font-size: 34px;
+  line-height: 1.15;
+}
+
+.stage-corner p:last-child {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.5;
+  color: #dff7ff;
+}
+
+.stage-readouts {
+  position: absolute;
+  top: 28px;
+  right: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.hud-chip {
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(4, 22, 36, 0.78);
+  border: 1px solid rgba(159, 210, 232, 0.45);
+  color: #dff7ff;
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-chip-accent {
+  border-color: #ffe082;
+  color: #ffe082;
+}
+
+.hud-chip-red {
+  border-color: #ff533d;
+  color: #ffb4a8;
+}
+
+.hud-chip-finish {
+  background: #ff533d;
+  border-color: #ff533d;
+  color: #fff;
+  font-size: 26px;
+}
+
+.stage-bottom {
+  display: grid;
+  gap: 12px;
+}
+
+.rudder-gauge {
+  position: absolute;
+  right: 36px;
+  bottom: 120px;
+  width: 220px;
+  padding: 14px 16px 10px;
+  border-radius: 14px;
+  background: rgba(4, 22, 36, 0.78);
+  border: 1px solid rgba(159, 210, 232, 0.45);
+  text-align: center;
+}
+
+.rudder-gauge svg {
+  width: 100%;
+  display: block;
+}
+
+.rudder-gauge-label {
+  margin-top: 4px;
+  font-size: 18px;
+  color: #dff7ff;
+}
+
+.rudder-gauge-label strong {
+  color: #ffe082;
+  font-variant-numeric: tabular-nums;
 }
