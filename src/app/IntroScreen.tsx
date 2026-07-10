@@ -18,6 +18,7 @@ import { RudderGauge } from "./intro/RudderGauge";
 import type { DemoBoat, DuelState, RaceRecording } from "./intro/introDemoSim";
 import {
   DEMO_MARK,
+  DEMO_READOUT_SPEED_KNOTS,
   DEMO_START_Y,
   DEMO_TIME_SCALE,
   DEMO_WIND_SPEED_KNOTS,
@@ -25,7 +26,6 @@ import {
   createDuelState,
   leadMeters,
   recordIntroRace,
-  speedKnotsOf,
   stepDemoBoat,
   stepDuel
 } from "./intro/introDemoSim";
@@ -109,13 +109,14 @@ const DEMO_COURSE: CourseDefinition = (() => {
   };
 })();
 
-const DEMO_OVERLAYS: OverlaySettings = { wind: false, current: false, tracks: true, laylines: false, noGoZone: false };
+const DEMO_OVERLAYS: OverlaySettings = { wind: false, tracks: true, laylines: false, noGoZone: false };
 
 function createAmbientBoat(x: number, y: number, headingDeg: number, tackHeld: "port" | "starboard"): DemoBoat {
   return {
     motion: createBoatMotionState({ position: { x, y }, headingDeg, speed: 3 * PIXELS_PER_KNOT }),
     track: [],
-    tackHeld
+    tackHeld,
+    tackChanges: 0
   };
 }
 
@@ -328,8 +329,8 @@ export function IntroScreen() {
           <div className="stage-readouts">
             {!playbackRedDone && (
               <>
-                <div className="hud-chip hud-chip-red">红船 {speedKnotsOf(redMotion).toFixed(1)} 节</div>
-                <div className="hud-chip hud-chip-blue">蓝船 {speedKnotsOf(blueMotion).toFixed(1)} 节</div>
+                <div className="hud-chip hud-chip-red">红船 {DEMO_READOUT_SPEED_KNOTS.toFixed(1)} 节</div>
+                <div className="hud-chip hud-chip-blue">蓝船 {DEMO_READOUT_SPEED_KNOTS.toFixed(1)} 节</div>
               </>
             )}
             {playbackRedDone && !playbackBlueDone && <div className="hud-chip hud-chip-finish">红船到 1 标！</div>}

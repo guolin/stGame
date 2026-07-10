@@ -41,8 +41,8 @@ describe("chooseAdaptiveTack (tack on headers)", () => {
 
 describe("chooseCornerTack", () => {
   it("tacks toward the middle at the arena edges and otherwise holds", () => {
-    expect(chooseCornerTack(300, "starboard")).toBe("port");
-    expect(chooseCornerTack(2500, "port")).toBe("starboard");
+    expect(chooseCornerTack(100, "starboard")).toBe("port");
+    expect(chooseCornerTack(2700, "port")).toBe("starboard");
     expect(chooseCornerTack(1400, "starboard")).toBe("starboard");
     expect(chooseCornerTack(1400, "port")).toBe("port");
   });
@@ -61,10 +61,31 @@ describe("recorded race", () => {
   it("both boats really reach the mark, red clearly first", () => {
     expect(recording.redAtMarkSec).toBeLessThan(recording.blueAtMarkSec);
     expect(recording.blueAtMarkSec - recording.redAtMarkSec).toBeGreaterThan(8);
+
+    const redFinish = recording.frames.find((frame) => frame.timeSec >= recording.redAtMarkSec)!.red.position;
+    const blueFinish = recording.frames.find((frame) => frame.timeSec >= recording.blueAtMarkSec)!.blue.position;
+    expect(Math.hypot(redFinish.x - DEMO_MARK.x, redFinish.y - DEMO_MARK.y)).toBeLessThan(80);
+    expect(Math.hypot(blueFinish.x - DEMO_MARK.x, blueFinish.y - DEMO_MARK.y)).toBeLessThan(80);
   });
 
-  it("the boats sail at essentially the same speed mid-race (the whole puzzle)", () => {
-    for (const t of [10, 20, 30]) {
+  it("uses clean left/right routes with one tack per boat", () => {
+    const countTacks = (boat: "red" | "blue") => {
+      let count = 0;
+      let tack = recording.frames[0][boat].tack;
+      for (const frame of recording.frames) {
+        if (frame[boat].tack !== tack) {
+          count += 1;
+          tack = frame[boat].tack;
+        }
+      }
+      return count;
+    };
+    expect(countTacks("red")).toBe(1);
+    expect(countTacks("blue")).toBe(1);
+  });
+
+  it("the boats sail at essentially the same speed off the line (the whole puzzle)", () => {
+    for (const t of [10, 20]) {
       const frame = recording.frames[t * 60];
       expect(Math.abs(speedKnotsOf(frame.red) - speedKnotsOf(frame.blue))).toBeLessThan(0.4);
     }

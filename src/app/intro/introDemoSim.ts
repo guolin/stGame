@@ -8,7 +8,7 @@ import { PIXELS_PER_KNOT } from "../../sim/boat/units";
  * Intro-demo simulation, all real boat physics.
  *
  * Acts 1+2 (recorded race): two identical boats — same hull, same polar,
- * so the same speed — race one upwind leg while the wind veers 355° → 20°.
+ * so the same speed — race one upwind leg while the wind veers 350° → 10°.
  * The race is recorded once; the "dark" page plays it with no wind drawn
  * (the on-the-water experience) and the next page replays the exact same
  * frames with the wind painted on.
@@ -22,13 +22,16 @@ export type DemoBoat = {
   track: Vec2[];
   /** The tack the boat's strategy wants, independent of mid-tack heading. */
   tackHeld: Tack;
+  /** Intro playback wants one readable side choice, not a full race AI. */
+  tackChanges: number;
 };
 
 export const DEMO_BASE_WIND_DEG = 0;
 export const DEMO_WIND_SPEED_KNOTS = 12;
-/** The veer runs from 355° through to 020°. */
-export const DEMO_SHIFT_FROM_DEG = -5;
-export const DEMO_SHIFT_TO_DEG = 20;
+export const DEMO_READOUT_SPEED_KNOTS = 3.3;
+/** The veer runs from 350° through to 010°. */
+export const DEMO_SHIFT_FROM_DEG = -10;
+export const DEMO_SHIFT_TO_DEG = 10;
 /** Playback compression for the recorded race. */
 export const DEMO_TIME_SCALE = 3;
 /** The live duel runs gentler so a human can steer. */
@@ -42,10 +45,11 @@ const SHIFT_RATE_DEG_PER_SEC = 1.2;
 /** Boats commit to their side off the line before sailing the shifts. */
 const SPLIT_HOLD_SEC = 14;
 const CLOSE_HAULED_DEG = 45;
-const TACK_HYSTERESIS_DEG = 12;
-const ARENA_LEFT = 380;
-const ARENA_RIGHT = 2420;
-const FINISH_RADIUS = 240;
+const RED_RETURN_LAYLINE_X = 1980;
+const BLUE_RETURN_LAYLINE_X = 600;
+const ARENA_LEFT = 360;
+const ARENA_RIGHT = 2440;
+const FINISH_RADIUS = 120;
 const STEER_GAIN = 0.045;
 const TRACK_SPACING = 24;
 const TRACK_LIMIT = 900;
@@ -56,21 +60,25 @@ export const PIXELS_PER_METER = PIXELS_PER_KNOT / 0.5144;
 
 function startingBoats(): { red: DemoBoat; blue: DemoBoat } {
   const speed = 3.2 * PIXELS_PER_KNOT;
+  const redMotion = createBoatMotionState({ position: { x: 1450, y: DEMO_START_Y }, headingDeg: 45, speed });
+  const blueMotion = createBoatMotionState({ position: { x: 1350, y: DEMO_START_Y }, headingDeg: 315, speed });
   return {
     red: {
-      motion: createBoatMotionState({ position: { x: 1450, y: DEMO_START_Y }, headingDeg: 45, speed }),
+      motion: { ...redMotion, tack: "port" },
       track: [],
-      tackHeld: "port"
+      tackHeld: "port",
+      tackChanges: 0
     },
     blue: {
-      motion: createBoatMotionState({ position: { x: 1350, y: DEMO_START_Y }, headingDeg: 315, speed }),
+      motion: { ...blueMotion, tack: "starboard" },
       track: [],
-      tackHeld: "starboard"
+      tackHeld: "starboard",
+      tackChanges: 0
     }
   };
 }
 
-/** One continuous veer from 355° to 20°, starting right away after a short grace. */
+/** One continuous veer from 350° to 10°, starting right away after a short grace. */
 export function demoWindOscDeg(timeSec: number): number {
   const swing = DEMO_SHIFT_TO_DEG - DEMO_SHIFT_FROM_DEG;
   const progressed = Math.max(0, timeSec - SHIFT_GRACE_SEC) * SHIFT_RATE_DEG_PER_SEC;
@@ -113,11 +121,17 @@ export function recordIntroRace(): RaceRecording {
 
     if (redAtMarkSec === undefined) {
       red = stepDemoBoat(red, chooseMarkTack(red, windDeg, timeSec), wind, DT);
-      if (isAtMark(red.motion.position)) redAtMarkSec = timeSec;
+      if (isAtMark(red.motion.position)) {
+        redAtMarkSec = timeSec;
+        red = finishAtMark(red);
+      }
     }
     if (blueAtMarkSec === undefined) {
       blue = stepDemoBoat(blue, chooseMarkTack(blue, windDeg, timeSec), wind, DT);
-      if (isAtMark(blue.motion.position)) blueAtMarkSec = timeSec;
+      if (isAtMark(blue.motion.position)) {
+        blueAtMarkSec = timeSec;
+        blue = finishAtMark(blue);
+      }
     }
 
     frames.push({
@@ -185,11 +199,17 @@ export function stepDuel(state: DuelState, playerRudder: number, dt: number): Du
       red = state.autopilot
         ? stepDemoBoat(red, chooseMarkTack(red, windDeg, simTimeSec), wind, dt)
         : stepPlayerBoat(red, playerRudder, wind, dt);
-      if (isAtMark(red.motion.position)) redAtMarkSec = simTimeSec;
+      if (isAtMark(red.motion.position)) {
+        redAtMarkSec = simTimeSec;
+        red = finishAtMark(red);
+      }
     }
     if (blueAtMarkSec === undefined) {
       blue = stepDemoBoat(blue, chooseMarkTack(blue, windDeg, simTimeSec), wind, dt);
-      if (isAtMark(blue.motion.position)) blueAtMarkSec = simTimeSec;
+      if (isAtMark(blue.motion.position)) {
+        blueAtMarkSec = simTimeSec;
+        blue = finishAtMark(blue);
+      }
     }
     finished = redAtMarkSec !== undefined && blueAtMarkSec !== undefined;
   }
@@ -203,13 +223,12 @@ function stepPlayerBoat(boat: DemoBoat, rudder: number, wind: LocalWind, dt: num
     rudder: clamp(rudder, -1, 1),
     boatType: "op",
     wind,
-    current: { x: 0, y: 0 },
     penaltyFactor: 1,
     dt
   });
   motion.position.x = clamp(motion.position.x, 60, 2740);
   motion.position.y = clamp(motion.position.y, 60, 1740);
-  return { motion, track: appendTrack(boat.track, motion.position), tackHeld: motion.tack };
+  return { motion, track: appendTrack(boat.track, motion.position), tackHeld: motion.tack, tackChanges: boat.tackChanges };
 }
 
 // ---------- shared helm logic ----------
@@ -246,17 +265,15 @@ export function chooseCornerTack(x: number, currentTack: Tack): Tack {
 }
 
 /** Sail for the mark, holding the chosen side off the line, with an arena guard. */
-function chooseMarkTack(boat: DemoBoat, windDeg: number, simTimeSec: number): Tack {
-  const guarded = chooseCornerTack(boat.motion.position.x, boat.tackHeld);
-  if (guarded !== boat.tackHeld) return guarded;
+function chooseMarkTack(boat: DemoBoat, _windDeg: number, simTimeSec: number): Tack {
+  if (boat.tackChanges >= 1) return boat.tackHeld;
   if (simTimeSec < SPLIT_HOLD_SEC) return boat.tackHeld;
-  return chooseAdaptiveTack({
-    position: boat.motion.position,
-    currentTack: boat.tackHeld,
-    windDeg,
-    mark: DEMO_MARK,
-    hysteresisDeg: TACK_HYSTERESIS_DEG
-  });
+
+  if (boat.tackHeld === "port" && boat.motion.position.x >= RED_RETURN_LAYLINE_X) return "starboard";
+  if (boat.tackHeld === "starboard" && boat.motion.position.x <= BLUE_RETURN_LAYLINE_X) return "port";
+
+  const guarded = chooseCornerTack(boat.motion.position.x, boat.tackHeld);
+  return guarded !== boat.tackHeld ? guarded : boat.tackHeld;
 }
 
 /** Race-truth lead: how many meters further from the mark blue is than red. */
@@ -271,7 +288,8 @@ export function speedKnotsOf(motion: BoatMotionState): number {
 }
 
 export function stepDemoBoat(boat: DemoBoat, tack: Tack, wind: LocalWind, dt: number): DemoBoat {
-  const target = targetHeadingForTack(tack, wind.directionDeg);
+  const tackChanges = boat.tackChanges + (tack !== boat.tackHeld ? 1 : 0);
+  const target = tackChanges > 0 ? bearingDeg(boat.motion.position, DEMO_MARK) : targetHeadingForTack(tack, wind.directionDeg);
   const rudder = clamp(signedDelta(boat.motion.headingDeg, target) * STEER_GAIN, -1, 1);
   const motion = stepBoatPhysics({
     motion: boat.motion,
@@ -281,7 +299,7 @@ export function stepDemoBoat(boat: DemoBoat, tack: Tack, wind: LocalWind, dt: nu
     penaltyFactor: 1,
     dt
   });
-  return { motion, track: appendTrack(boat.track, motion.position), tackHeld: tack };
+  return { motion, track: appendTrack(boat.track, motion.position), tackHeld: tack, tackChanges };
 }
 
 function appendTrack(track: Vec2[], position: Vec2): Vec2[] {
@@ -293,6 +311,16 @@ function appendTrack(track: Vec2[], position: Vec2): Vec2[] {
 
 function isAtMark(position: Vec2): boolean {
   return Math.hypot(position.x - DEMO_MARK.x, position.y - DEMO_MARK.y) < FINISH_RADIUS;
+}
+
+function finishAtMark(boat: DemoBoat): DemoBoat {
+  const motion = {
+    ...boat.motion,
+    position: { ...DEMO_MARK },
+    velocity: { x: 0, y: 0 },
+    speed: 0
+  };
+  return { ...boat, motion, track: appendTrack(boat.track, DEMO_MARK) };
 }
 
 function bearingDeg(from: Vec2, to: Vec2): number {
