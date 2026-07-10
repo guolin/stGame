@@ -231,7 +231,6 @@ function stepAutopilot(
     rudder,
     boatType: "op",
     wind,
-    current: { x: 0, y: 0 },
     penaltyFactor: 1,
     dt: 1 / 60
   });

@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import { INITIAL_CURRENTS, INITIAL_OVERLAYS, INITIAL_WIND, INITIAL_WIND_FIELD } from "../game/constants";
-import type { AppView, BoatControls, BoatId, BoatState, CurrentZone, OverlaySettings, RaceState, WindState, WindZoneState } from "../game/types";
+import { INITIAL_OVERLAYS, INITIAL_WIND, INITIAL_WIND_FIELD } from "../game/constants";
+import type { AppView, BoatControls, BoatId, BoatState, OverlaySettings, RaceState, WindState, WindZoneState } from "../game/types";
 import { splitFrameIntoSteps } from "../sim/loop";
 import { SIM_DT, cloneInitialBoats, cloneInitialRace, stepSimulation } from "../sim/simulation";
 import { getCourse } from "../sim/course/courses";
@@ -26,7 +26,6 @@ type GameStore = {
   windField: WindFieldConfig;
   wind: WindState;
   windZones: WindZoneState[];
-  currents: CurrentZone[];
   rulesState: RulesEngineState;
   overlays: OverlaySettings;
   hudVisible: boolean;
@@ -77,7 +76,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
   windField: INITIAL_WIND_FIELD,
   wind: { ...INITIAL_WIND },
   windZones: [],
-  currents: INITIAL_CURRENTS,
   rulesState: createRulesEngineState(),
   overlays: { ...INITIAL_OVERLAYS },
   hudVisible: true,
@@ -104,7 +102,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       windField: state.windField,
       wind: state.wind,
       windZones: state.windZones,
-      currents: state.currents,
       rulesState: state.rulesState
     };
     for (let step = 0; step < steps; step += 1) {
@@ -136,8 +133,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       windField,
       wind: { ...INITIAL_WIND, speedKnots: windField.baseSpeedKnots },
       windZones: windZones.map((zone) => ({ ...zone, bounds: { ...zone.bounds } })),
-      currents: [],
-      overlays: { ...env.overlays, current: false },
+      overlays: env.overlays,
       rulesState: createRulesEngineState(),
       controls: createEmptyControls(),
       timeScale: NORMAL_TIME_SCALE
@@ -161,7 +157,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       race: { ...cloneInitialRace(), phase: "racing", countdownMs: 0 },
       windField: env.windField,
       windZones: [],
-      currents: [],
       overlays: { ...env.overlays, laylines: false, noGoZone: false },
       boats: cloneInitialBoats(state.course).map((boat) => {
         if (boat.id === "red") {

@@ -1,15 +1,7 @@
-import {
-  INITIAL_BOATS,
-  INITIAL_CURRENTS,
-  INITIAL_RACE,
-  INITIAL_WIND_FIELD,
-  INITIAL_WIND_ZONES,
-  WORLD
-} from "../game/constants";
+import { INITIAL_BOATS, INITIAL_RACE, INITIAL_WIND_FIELD, INITIAL_WIND_ZONES, WORLD } from "../game/constants";
 import type { WindFieldConfig } from "./wind/windField";
 import { getLocalWind, globalWindAt } from "./wind/windField";
-import type { BoatControls, BoatId, BoatState, CurrentZone, RaceEvent, RaceState, WindState, WindZoneState } from "../game/types";
-import { currentAt } from "../game/systems/currentSystem";
+import type { BoatControls, BoatId, BoatState, RaceEvent, RaceState, WindState, WindZoneState } from "../game/types";
 import { getCourse } from "./course/courses";
 import type { CourseDefinition, CourseId } from "./course/types";
 import { stepBoatPhysics } from "./boat/boatPhysics";
@@ -40,7 +32,6 @@ export type SimState = {
   /** Derived global wind for the current tick; recomputed from windField each step. */
   wind: WindState;
   windZones: WindZoneState[];
-  currents: CurrentZone[];
   rulesState: RulesEngineState;
 };
 
@@ -54,7 +45,6 @@ export function createInitialSimState(activeBoatIds: BoatId[] = ["red", "blue"],
     windField: INITIAL_WIND_FIELD,
     wind: globalWindAt(INITIAL_WIND_FIELD, 0),
     windZones: INITIAL_WIND_ZONES.map((zone) => ({ ...zone, bounds: { ...zone.bounds } })),
-    currents: INITIAL_CURRENTS.map((zone) => ({ ...zone, center: { ...zone.center }, vector: { ...zone.vector } })),
     rulesState: createRulesEngineState()
   };
 }
@@ -104,7 +94,6 @@ export function stepSimulation(state: SimState, controls: Record<BoatId, BoatCon
   let boats = state.boats.map((boat) => {
     if (!state.activeBoatIds.includes(boat.id)) return boat;
     const prevPosition = boat.position;
-    const current = currentAt(boat.position, state.currents);
     const local = getLocalWind(state.windField, boat.position, elapsedSec);
     const wasPenalized = Boolean(boat.penaltyUntilMs && boat.penaltyUntilMs > state.race.elapsedMs);
     const isPenalized = Boolean(boat.penaltyUntilMs && boat.penaltyUntilMs > elapsedMs);
@@ -134,7 +123,6 @@ export function stepSimulation(state: SimState, controls: Record<BoatId, BoatCon
       rudder: controls[boat.id].rudder,
       boatType: boat.boatType,
       wind: local,
-      current,
       penaltyFactor: isPenalized ? 0.4 : 1,
       dt
     });

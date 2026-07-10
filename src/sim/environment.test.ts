@@ -12,22 +12,16 @@ describe("buildEnvironment", () => {
     }
   });
 
-  it("keeps the wind steady and the water empty in the stable preset", () => {
+  it("keeps the wind steady in the stable preset", () => {
     const env = buildEnvironment("standard", "stable");
     expect(env.windField.oscillation.kind).toBe("none");
     expect(env.windField.gusts).toHaveLength(0);
-    expect(env.currents).toHaveLength(0);
   });
 
   it("adds moving gusts in the gust demo preset", () => {
     const env = buildEnvironment("standard", "gust");
     expect(env.windField.gusts.length).toBeGreaterThan(0);
     expect(env.windField.gusts.some((g) => g.movementVector.x !== 0 || g.movementVector.y !== 0)).toBe(true);
-  });
-
-  it("adds visible current zones in the current demo preset", () => {
-    const env = buildEnvironment("standard", "current");
-    expect(env.currents.length).toBeGreaterThan(0);
   });
 
   it("scales wind speed with difficulty", () => {

@@ -21,7 +21,7 @@ export type BoatMotionState = {
   headingDeg: number;
   /** Speed through water in px/s. */
   speed: number;
-  /** Speed over ground vector in px/s (includes current). */
+  /** Speed over ground vector in px/s. */
   velocity: Vec2;
   rudderAngleDeg: number;
   sailAngleDeg: number;
@@ -38,7 +38,6 @@ export type BoatPhysicsInput = {
   rudder: number;
   boatType: BoatType;
   wind: LocalWind;
-  current: Vec2;
   /** 1 = normal; <1 while serving a slow-down penalty. */
   penaltyFactor: number;
   dt: number;
@@ -85,7 +84,7 @@ export function idealSailAngle(twaDeg: number): number {
   return clamp((twaDeg - 15) * 0.6, 8, 88);
 }
 
-export function stepBoatPhysics({ motion, rudder, boatType, wind, current, penaltyFactor, dt }: BoatPhysicsInput): BoatMotionState {
+export function stepBoatPhysics({ motion, rudder, boatType, wind, penaltyFactor, dt }: BoatPhysicsInput): BoatMotionState {
   // --- rudder ---
   const command = clamp(rudder, -1, 1) * MAX_RUDDER_DEG;
   const slew = Math.abs(rudder) < 0.05 ? RUDDER_CENTERING_DEG_PER_SEC : RUDDER_SLEW_DEG_PER_SEC;
@@ -124,7 +123,7 @@ export function stepBoatPhysics({ motion, rudder, boatType, wind, current, penal
 
   // --- motion over ground ---
   const bow = headingToVector(headingDeg);
-  const velocity = { x: bow.x * speed + current.x, y: bow.y * speed + current.y };
+  const velocity = { x: bow.x * speed, y: bow.y * speed };
   const position = { x: motion.position.x + velocity.x * dt, y: motion.position.y + velocity.y * dt };
 
   return {

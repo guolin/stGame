@@ -14,7 +14,7 @@ export type BoatState = {
   headingDeg: number;
   /** Speed through water (STW) in px/s. */
   speed: number;
-  /** Speed over ground (SOG) vector in px/s, includes current. */
+  /** Speed over ground (SOG) vector in px/s. */
   velocity: Vec2;
   rudderAngleDeg: number;
   sailAngleDeg: number;
@@ -69,13 +69,6 @@ export type WindZoneState = {
   phaseSpeed: number;
 };
 
-export type CurrentZone = {
-  id: string;
-  center: Vec2;
-  radius: number;
-  vector: Vec2;
-};
-
 export type RacePhase = "prestart" | "racing" | "finished" | "paused";
 
 export type RaceState = {
@@ -122,7 +115,6 @@ export type LineSegment = {
 
 export type OverlaySettings = {
   wind: boolean;
-  current: boolean;
   tracks: boolean;
   laylines: boolean;
   noGoZone: boolean;

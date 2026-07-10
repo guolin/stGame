@@ -5,7 +5,7 @@ import { THEME } from "./theme";
 
 describe("THEME", () => {
   it("defines every rendering layer group used by src/game/rendering", () => {
-    const groups = ["text", "water", "wind", "windZone", "gust", "current", "boat", "course", "tactical"] as const;
+    const groups = ["text", "water", "wind", "windZone", "gust", "boat", "course", "tactical"] as const;
     for (const group of groups) {
       expect(THEME[group]).toBeDefined();
     }
@@ -30,7 +30,6 @@ const RENDERING_FILES = [
   "WindLayer.tsx",
   "WindZoneLayer.tsx",
   "GustLayer.tsx",
-  "CurrentLayer.tsx",
   "BoatSprite.tsx",
   "CourseLayer.tsx",
   "TacticalOverlayLayer.tsx"

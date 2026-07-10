@@ -1,4 +1,4 @@
-import { Gauge, List, Pause, Settings2 } from "lucide-react";
+import { Gauge, List, Pause, Play, Settings2 } from "lucide-react";
 import { FocusableButton } from "../../app/navigation/FocusableButton";
 import { useGameStore } from "../../store/gameStore";
 
@@ -13,13 +13,15 @@ export function CoachControls({ onRestartSetup }: CoachControlsProps) {
   const timeScale = useGameStore((state) => state.timeScale);
   const setTimeScale = useGameStore((state) => state.setTimeScale);
   const togglePause = useGameStore((state) => state.togglePause);
+  const racePhase = useGameStore((state) => state.race.phase);
+  const isPaused = racePhase === "paused";
   const speedIndex = SPEED_STEPS.indexOf(timeScale);
   const nextSpeed = SPEED_STEPS[(speedIndex + 1) % SPEED_STEPS.length] ?? 1;
 
   return (
     <section className="coach-controls">
-      <FocusableButton type="button" className="icon-button" onClick={togglePause} aria-label="暂停或继续" title="暂停/继续" autoFocus>
-        <Pause aria-hidden="true" />
+      <FocusableButton type="button" className="icon-button" onClick={togglePause} aria-label={isPaused ? "继续比赛" : "暂停比赛"} title={isPaused ? "继续比赛" : "暂停比赛"} autoFocus>
+        {isPaused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}
       </FocusableButton>
       <FocusableButton type="button" className="icon-button" onClick={() => setTimeScale(nextSpeed)} aria-label={`速度 ${timeScale} 倍`} title="切换速度">
         <Gauge aria-hidden="true" />
