@@ -20,9 +20,7 @@ export function TacticalOverlayLayer({ boats, overlays, wind, course }: Tactical
       graphics.clear();
       boats.forEach((boat) => {
         if (overlays.tracks && boat.track.length > 1) {
-          graphics.moveTo(boat.track[0].x, boat.track[0].y);
-          boat.track.slice(1).forEach((point) => graphics.lineTo(point.x, point.y));
-          graphics.stroke({ color: boat.color, alpha: THEME.tactical.trackAlpha, width: THEME.tactical.trackWidth });
+          drawDottedTrack(graphics, boat);
         }
 
         if (overlays.laylines) {
@@ -41,6 +39,19 @@ export function TacticalOverlayLayer({ boats, overlays, wind, course }: Tactical
   );
 
   return <GraphicsShape draw={draw} />;
+}
+
+function drawDottedTrack(graphics: PixiGraphics, boat: BoatState) {
+  const dotRadius = 6.2;
+
+  for (let index = boat.track.length - 1; index >= 0; index -= 1) {
+    const current = boat.track[index];
+    const age = (boat.track.length - 1 - index) / Math.max(1, boat.track.length - 1);
+    const radius = dotRadius * (1 - age * 0.28);
+    const alpha = Math.max(0.18, 0.9 * (1 - age) ** 0.72);
+    graphics.circle(current.x, current.y, radius + 2.2).fill({ color: THEME.boat.wakeColor, alpha: alpha * 0.26 });
+    graphics.circle(current.x, current.y, radius).fill({ color: boat.color, alpha });
+  }
 }
 
 function drawLayline(graphics: PixiGraphics, boat: BoatState, deg: number, markPosition?: Vec2) {

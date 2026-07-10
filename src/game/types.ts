@@ -33,6 +33,7 @@ export type BoatState = {
   penaltyCount: number;
   penaltyUntilMs?: number;
   track: Vec2[];
+  lastTrackSampleMs?: number;
 };
 
 export type RaceEventKind = "start" | "ocs" | "ocs-cleared" | "mark" | "finish" | "rule" | "penalty-end";
@@ -84,6 +85,15 @@ export type RaceState = {
 export type BoatControls = {
   /** Normalized rudder command in [-1, 1]; the only axis the sailing gamepad provides. */
   rudder: number;
+};
+
+export type AiDifficulty = "high" | "medium" | "low";
+export type AiControlProfile = AiDifficulty | "reserve";
+
+export type BoatPilotState = {
+  mode: "unclaimed" | "human" | "ai";
+  aiDifficulty?: AiDifficulty;
+  aiProfile?: AiControlProfile;
 };
 
 export type RuleEvent = {

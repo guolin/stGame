@@ -86,6 +86,7 @@ export function stepDigitalRudder(current: number, direction: number, dt: number
 
 export function useGamepadControls() {
   const setControl = useGameStore((state) => state.setControl);
+  const claimHumanControl = useGameStore((state) => state.claimHumanControl);
   const activeBoatIds = useGameStore((state) => state.activeBoatIds);
   const gamepadSteering = useGameStore((state) => state.gamepadSteering);
   const lastRudderRef = useRef<Record<BoatId, number>>({ red: 0, blue: 0, green: 0, yellow: 0 });
@@ -110,6 +111,7 @@ export function useGamepadControls() {
         const nextDigitalRudder = stepDigitalRudder(digitalRudderRef.current[boatId], digital, dt);
         digitalRudderRef.current = { ...digitalRudderRef.current, [boatId]: nextDigitalRudder };
         const rudder = Math.abs(nextDigitalRudder) > 0 ? nextDigitalRudder : analog;
+        if (digital !== 0 || Math.abs(analog) > 0) claimHumanControl(boatId);
 
         if (rudder !== lastRudderRef.current[boatId]) {
           lastRudderRef.current = { ...lastRudderRef.current, [boatId]: rudder };
@@ -125,5 +127,5 @@ export function useGamepadControls() {
       lastTimeRef.current = undefined;
       cancelAnimationFrame(frame);
     };
-  }, [activeBoatIds, gamepadSteering, setControl]);
+  }, [activeBoatIds, claimHumanControl, gamepadSteering, setControl]);
 }

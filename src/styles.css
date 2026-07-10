@@ -993,8 +993,7 @@ input {
   gap: 14px;
 }
 
-.setup-block > strong,
-.control-cheatsheet > strong {
+.setup-block > strong {
   color: #ffe082;
   font-size: 16px;
 }
@@ -1053,37 +1052,6 @@ input {
   font-size: 15px;
   font-weight: 800;
   line-height: 1.25;
-}
-
-.control-cheatsheet {
-  margin-top: 14px;
-  padding: 10px;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 8px;
-  background: rgba(3, 25, 42, 0.54);
-}
-
-.control-cheatsheet.compact {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.control-cheatsheet strong {
-  grid-column: 1 / -1;
-}
-
-.control-cheatsheet span {
-  min-height: 30px;
-  padding: 6px 9px;
-  border-radius: 6px;
-  background: rgba(217, 247, 255, 0.1);
-  color: #e7faff;
-  font-size: 14px;
-  font-weight: 800;
 }
 
 .modal-actions {

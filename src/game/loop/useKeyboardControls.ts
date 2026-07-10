@@ -15,6 +15,7 @@ const keyMap: Record<string, { boat: BoatId; rudder: -1 | 1 }> = {
 
 export function useKeyboardControls() {
   const setControl = useGameStore((state) => state.setControl);
+  const claimHumanControl = useGameStore((state) => state.claimHumanControl);
   const togglePause = useGameStore((state) => state.togglePause);
   const lastRudderRef = useRef<Record<BoatId, number>>({ red: 0, blue: 0, green: 0, yellow: 0 });
 
@@ -51,6 +52,7 @@ export function useKeyboardControls() {
       const mapping = keyMap[event.code];
       if (!mapping) return;
       event.preventDefault();
+      claimHumanControl(mapping.boat);
       downKeys.add(event.code);
       updateRudder(mapping.boat);
     };
@@ -79,5 +81,5 @@ export function useKeyboardControls() {
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", handleBlur);
     };
-  }, [setControl, togglePause]);
+  }, [claimHumanControl, setControl, togglePause]);
 }

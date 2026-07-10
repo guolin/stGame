@@ -84,15 +84,6 @@ export function RaceSetupDialog({ onClose }: RaceSetupDialogProps) {
             </div>
           </div>
 
-          <div className="control-cheatsheet compact">
-            <strong>键盘</strong>
-            <span>红 A/D</span>
-            <span>绿 ←/→</span>
-            <span>黄 J/L</span>
-            <span>蓝 4/6</span>
-            <span>Space 暂停</span>
-          </div>
-
           <div className="modal-actions">
             <FocusableButton type="button" className="accent" onClick={beginRace} autoFocus>
               开始倒计时

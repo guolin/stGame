@@ -11,12 +11,23 @@ import type { RulesEngineState } from "./rules/rulesEngine";
 import { updateWindZones } from "../game/systems/windZoneSystem";
 
 const MAX_TRACK_POINTS = 260;
+const TRACK_SAMPLE_INTERVAL_MS = 420;
 
-function appendTrackPoint(track: { x: number; y: number }[], position: { x: number; y: number }) {
-  const last = track[track.length - 1];
-  const shouldAppend = !last || Math.hypot(last.x - position.x, last.y - position.y) > 6;
-  const next = shouldAppend ? [...track, position] : track;
-  return next.length > MAX_TRACK_POINTS ? next.slice(next.length - MAX_TRACK_POINTS) : next;
+function appendTrackPoint(
+  track: { x: number; y: number }[],
+  position: { x: number; y: number },
+  elapsedMs: number,
+  lastTrackSampleMs?: number
+) {
+  if (lastTrackSampleMs !== undefined && elapsedMs - lastTrackSampleMs < TRACK_SAMPLE_INTERVAL_MS) {
+    return { track, lastTrackSampleMs };
+  }
+
+  const next = [...track, position];
+  return {
+    track: next.length > MAX_TRACK_POINTS ? next.slice(next.length - MAX_TRACK_POINTS) : next,
+    lastTrackSampleMs: elapsedMs
+  };
 }
 
 export const SIM_DT = 1 / 60;
@@ -60,7 +71,8 @@ export function cloneInitialBoats(course?: CourseDefinition): BoatState[] {
       legIndex: 0,
       finished: false,
       penaltyUntilMs: undefined,
-      track: []
+      track: [],
+      lastTrackSampleMs: undefined
     };
   });
 }
@@ -132,12 +144,14 @@ export function stepSimulation(state: SimState, controls: Record<BoatId, BoatCon
       y: Math.max(32, Math.min(WORLD.height - 32, motion.position.y))
     };
 
+    const sampledTrack = appendTrackPoint(boat.track, position, elapsedMs, boat.lastTrackSampleMs);
     let next: BoatState = {
       ...boat,
       ...motion,
       position,
       tackCount: motion.tack !== boat.tack ? boat.tackCount + 1 : boat.tackCount,
-      track: appendTrackPoint(boat.track, position)
+      track: sampledTrack.track,
+      lastTrackSampleMs: sampledTrack.lastTrackSampleMs
     };
 
     if (race.phase === "racing") {

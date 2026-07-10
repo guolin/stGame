@@ -1,6 +1,16 @@
 import { create } from "zustand";
 import { INITIAL_OVERLAYS, INITIAL_WIND, INITIAL_WIND_FIELD } from "../game/constants";
-import type { AppView, BoatControls, BoatId, BoatState, OverlaySettings, RaceState, WindState, WindZoneState } from "../game/types";
+import type {
+  AppView,
+  BoatControls,
+  BoatId,
+  BoatPilotState,
+  BoatState,
+  OverlaySettings,
+  RaceState,
+  WindState,
+  WindZoneState
+} from "../game/types";
 import { splitFrameIntoSteps } from "../sim/loop";
 import { SIM_DT, cloneInitialBoats, cloneInitialRace, stepSimulation } from "../sim/simulation";
 import { getCourse } from "../sim/course/courses";
@@ -12,6 +22,7 @@ import type { DifficultyId, EnvironmentId, WindZoneCount } from "../sim/environm
 import type { WindFieldConfig } from "../sim/wind/windField";
 import { DEFAULT_GAMEPAD_STEERING, sanitizeGamepadSteeringSettings } from "../game/loop/gamepadTuning";
 import type { GamepadSteeringSettings } from "../game/loop/gamepadTuning";
+import { assignAiDifficulties, computeAiBoatControl } from "../game/loop/aiControls";
 
 export type SetupStep = "players" | "course" | "difficulty" | "environment" | "controllers";
 
@@ -33,6 +44,7 @@ type GameStore = {
   hudVisible: boolean;
   timeScale: number;
   gamepadSteering: GamepadSteeringSettings;
+  boatPilots: Record<BoatId, BoatPilotState>;
   controls: Record<BoatId, BoatControls>;
   tick: (dt: number) => void;
   setView: (view: AppView) => void;
@@ -43,6 +55,7 @@ type GameStore = {
   setEnvironment: (environment: EnvironmentId) => void;
   setWindZoneCount: (count: WindZoneCount) => void;
   startRace: () => void;
+  claimHumanControl: (boatId: BoatId) => void;
   setControl: (boatId: BoatId, control: Partial<BoatControls>) => void;
   setupRule10Demo: () => void;
   toggleOverlay: (key: keyof OverlaySettings) => void;
@@ -55,6 +68,7 @@ type GameStore = {
 
 const BOAT_ORDER: BoatId[] = ["red", "green", "yellow", "blue"];
 const NORMAL_TIME_SCALE = 1;
+const START_STEP_EPSILON_MS = SIM_DT * 1000 + 0.001;
 
 function createEmptyControls(): Record<BoatId, BoatControls> {
   return {
@@ -63,6 +77,58 @@ function createEmptyControls(): Record<BoatId, BoatControls> {
     green: { rudder: 0 },
     yellow: { rudder: 0 }
   };
+}
+
+function createUnclaimedPilots(): Record<BoatId, BoatPilotState> {
+  return {
+    red: { mode: "unclaimed" },
+    blue: { mode: "unclaimed" },
+    green: { mode: "unclaimed" },
+    yellow: { mode: "unclaimed" }
+  };
+}
+
+function promoteUnclaimedBoatsToAi(pilots: Record<BoatId, BoatPilotState>, activeBoatIds: readonly BoatId[]) {
+  const unclaimed = activeBoatIds.filter((boatId) => pilots[boatId].mode === "unclaimed");
+  if (unclaimed.length === 0) return { pilots, changed: false };
+
+  const assignments = assignAiDifficulties(unclaimed);
+  const next = { ...pilots };
+  unclaimed.forEach((boatId) => {
+    const aiDifficulty = assignments[boatId];
+    next[boatId] = aiDifficulty ? { mode: "ai", aiDifficulty, aiProfile: aiDifficulty } : { mode: "ai", aiProfile: "reserve" };
+  });
+  return { pilots: next, changed: true };
+}
+
+function controlsForStep({
+  boats,
+  activeBoatIds,
+  controls,
+  pilots,
+  course,
+  wind,
+  elapsedMs
+}: {
+  boats: BoatState[];
+  activeBoatIds: readonly BoatId[];
+  controls: Record<BoatId, BoatControls>;
+  pilots: Record<BoatId, BoatPilotState>;
+  course: CourseDefinition;
+  wind: WindState;
+  elapsedMs: number;
+}): Record<BoatId, BoatControls> {
+  const next = { ...controls };
+  activeBoatIds.forEach((boatId) => {
+    const pilot = pilots[boatId];
+    if (pilot.mode !== "ai") return;
+    const aiProfile = pilot.aiProfile ?? pilot.aiDifficulty;
+    if (!aiProfile) return;
+    const boat = boats.find((item) => item.id === boatId);
+    if (!boat) return;
+    next[boatId] = computeAiBoatControl({ boat, course, wind, difficulty: aiProfile, elapsedMs });
+  });
+  return next;
 }
 
 let frameAccumulator = 0;
@@ -85,6 +151,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   hudVisible: true,
   timeScale: NORMAL_TIME_SCALE,
   gamepadSteering: DEFAULT_GAMEPAD_STEERING,
+  boatPilots: createUnclaimedPilots(),
   controls: createEmptyControls(),
   tick: (frameDt) => {
     const state = get();
@@ -99,6 +166,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     frameAccumulator = remainder;
     if (steps === 0) return;
 
+    let pilots = state.boatPilots;
+    let pilotsChanged = false;
     let sim = {
       boats: state.boats,
       activeBoatIds: state.activeBoatIds,
@@ -110,10 +179,39 @@ export const useGameStore = create<GameStore>((set, get) => ({
       rulesState: state.rulesState
     };
     for (let step = 0; step < steps; step += 1) {
-      sim = stepSimulation(sim, get().controls);
+      const startsThisStep = sim.race.phase === "prestart" && sim.race.countdownMs <= START_STEP_EPSILON_MS;
+      if (sim.race.phase === "racing" || startsThisStep) {
+        const promoted = promoteUnclaimedBoatsToAi(pilots, sim.activeBoatIds);
+        pilots = promoted.pilots;
+        pilotsChanged ||= promoted.changed;
+      }
+
+      const frozenBoatIds = new Set(
+        sim.race.phase === "prestart" && !startsThisStep
+          ? sim.activeBoatIds.filter((boatId) => pilots[boatId].mode !== "human")
+          : []
+      );
+      const activeBoatIds = sim.activeBoatIds.filter((boatId) => !frozenBoatIds.has(boatId));
+      const stepControls = controlsForStep({
+        boats: sim.boats,
+        activeBoatIds,
+        controls: get().controls,
+        pilots,
+        course: sim.course,
+        wind: sim.wind,
+        elapsedMs: sim.race.elapsedMs
+      });
+      sim = stepSimulation({ ...sim, activeBoatIds }, stepControls);
     }
 
-    set({ boats: sim.boats, race: sim.race, wind: sim.wind, windZones: sim.windZones, rulesState: sim.rulesState });
+    set({
+      boats: sim.boats,
+      race: sim.race,
+      wind: sim.wind,
+      windZones: sim.windZones,
+      rulesState: sim.rulesState,
+      ...(pilotsChanged ? { boatPilots: pilots } : {})
+    });
   },
   setView: (view) => set({ view }),
   setSetupStep: (step) => set({ setupStep: step }),
@@ -140,8 +238,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
       windZones: windZones.map((zone) => ({ ...zone, bounds: { ...zone.bounds } })),
       overlays: env.overlays,
       rulesState: createRulesEngineState(),
+      boatPilots: createUnclaimedPilots(),
       controls: createEmptyControls(),
       timeScale: NORMAL_TIME_SCALE
+    });
+  },
+  claimHumanControl: (boatId) => {
+    set((state) => {
+      if (!state.activeBoatIds.includes(boatId) || state.boatPilots[boatId].mode === "human") return {};
+      return {
+        boatPilots: {
+          ...state.boatPilots,
+          [boatId]: { mode: "human" }
+        }
+      };
     });
   },
   setControl: (boatId, control) => {
@@ -173,6 +283,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
         return boat;
       }),
       rulesState: createRulesEngineState(),
+      boatPilots: {
+        ...createUnclaimedPilots(),
+        red: { mode: "human" },
+        blue: { mode: "human" }
+      },
       controls: createEmptyControls(),
       timeScale: NORMAL_TIME_SCALE
     });
@@ -200,6 +315,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       boats: cloneInitialBoats(state.course),
       race: { ...cloneInitialRace(), countdownMs: env.countdownMs },
       rulesState: createRulesEngineState(),
+      boatPilots: createUnclaimedPilots(),
       controls: createEmptyControls(),
       timeScale: NORMAL_TIME_SCALE
     });
