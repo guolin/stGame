@@ -4,6 +4,7 @@ import { COURSE_IDS, getCourse } from "../sim/course/courses";
 import type { CourseId } from "../sim/course/types";
 import type { WindZoneCount } from "../sim/environment";
 import { useGameStore } from "../store/gameStore";
+import { unlockRaceAudio } from "../game/audio/raceSounds";
 import { FocusableButton } from "./navigation/FocusableButton";
 
 type RaceSetupDialogProps = {
@@ -27,6 +28,7 @@ export function RaceSetupDialog({ onClose }: RaceSetupDialogProps) {
 
   const selectedCourseId = useMemo<CourseId>(() => (COURSE_IDS.includes(course.id) ? course.id : COURSE_IDS[0]), [course.id]);
   const beginRace = () => {
+    unlockRaceAudio();
     setCourse(selectedCourseId);
     startRace();
     onClose();
