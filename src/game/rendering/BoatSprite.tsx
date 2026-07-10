@@ -20,16 +20,19 @@ export function BoatSprite({ boat }: BoatSpriteProps) {
       graphics.lineTo(0, -48);
       graphics.fill(THEME.boat.hullFillColor).stroke({ color: boat.color, width: THEME.boat.hullStrokeWidth });
       const side = boat.tack === "starboard" ? -1 : 1;
-      const boomRoot = { x: side * 4, y: 6 };
+      const boomRoot = { x: side * 4, y: -18 };
       const boomAngleRad = (clamp(boat.sailAngleDeg, 8, 89) * Math.PI) / 180;
       const boomLength = 46;
       const boomTip = {
         x: boomRoot.x + side * Math.sin(boomAngleRad) * boomLength,
-        y: boomRoot.y - Math.cos(boomAngleRad) * boomLength
+        y: boomRoot.y + Math.cos(boomAngleRad) * boomLength
       };
       graphics.moveTo(boomRoot.x, boomRoot.y);
       graphics.lineTo(boomTip.x, boomTip.y);
-      graphics.stroke({ color: boat.color, width: THEME.boat.mastWidth + 3 });
+      graphics.stroke({ color: THEME.boat.mastColor, width: THEME.boat.mastWidth + 5, cap: "square" });
+      graphics.moveTo(boomRoot.x, boomRoot.y);
+      graphics.lineTo(boomTip.x, boomTip.y);
+      graphics.stroke({ color: boat.color, width: THEME.boat.mastWidth + 3, cap: "square" });
     },
     [boat.color, boat.sailAngleDeg, boat.tack]
   );
