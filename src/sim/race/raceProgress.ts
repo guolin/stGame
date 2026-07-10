@@ -1,5 +1,5 @@
 import type { BoatState, LineSegment, RaceEvent, Vec2 } from "../../game/types";
-import { distance } from "../../game/utils/math";
+import { distance, headingToVector } from "../../game/utils/math";
 import type { CourseDefinition } from "../course/types";
 import { currentTarget, isOnFinalLeg } from "../course/progress";
 
@@ -21,23 +21,26 @@ export type RaceProgressResult = {
 const ROUNDING_TRACK_RADIUS = 170;
 /** Minimal bearing sweep that proves the boat passed the mark on the required side. */
 const ROUNDING_PASS_SWEEP_DEG = 45;
+const BOW_OFFSET_PX = 48;
 
 export function updateBoatRace({ boat, prevPosition, course, elapsedMs, startSignal }: RaceProgressInput): RaceProgressResult {
   const events: RaceEvent[] = [];
   let next = boat;
+  const prevBow = bowPosition(next, prevPosition);
+  const bow = bowPosition(next);
 
   const emit = (kind: RaceEvent["kind"], message: string) => {
     events.push({ id: `${kind}-${boat.id}-${Math.round(elapsedMs)}`, timeMs: elapsedMs, kind, boatId: boat.id, message });
   };
 
   // --- starting signal: anyone on the course side is OCS ---
-  if (startSignal && next.startStatus === "prestart" && isOnCourseSide(next.position, course.startLine)) {
+  if (startSignal && next.startStatus === "prestart" && isOnCourseSide(bow, course.startLine)) {
     next = { ...next, startStatus: "ocs" };
     emit("ocs", `${boat.name} 抢航（OCS），必须回到起航线后重新起航`);
   }
 
   if (next.startStatus === "ocs") {
-    if (!isOnCourseSide(next.position, course.startLine)) {
+    if (!isOnCourseSide(bow, course.startLine)) {
       next = { ...next, startStatus: "prestart" };
       emit("ocs-cleared", `${boat.name} 已回到起航线后，可以重新起航`);
     }
@@ -45,7 +48,7 @@ export function updateBoatRace({ boat, prevPosition, course, elapsedMs, startSig
   }
 
   if (next.startStatus === "prestart") {
-    if (!startSignal && crossesLineUpward(prevPosition, next.position, course.startLine)) {
+    if (!startSignal && crossesLineUpward(prevBow, bow, course.startLine)) {
       next = { ...next, startStatus: "started" };
       emit("start", `${boat.name} 起航`);
     }
@@ -85,6 +88,14 @@ export function updateBoatRace({ boat, prevPosition, course, elapsedMs, startSig
   }
 
   return { boat: next, events };
+}
+
+function bowPosition(boat: BoatState, position = boat.position): Vec2 {
+  const forward = headingToVector(boat.headingDeg);
+  return {
+    x: position.x + forward.x * BOW_OFFSET_PX,
+    y: position.y + forward.y * BOW_OFFSET_PX
+  };
 }
 
 /** Course side is above the line (marks are upwind of the start). */
