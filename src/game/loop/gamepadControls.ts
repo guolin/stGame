@@ -11,7 +11,7 @@ const DIGITAL_RUDDER_RETURN_PER_SEC = 4;
 
 export function gamepadAxisToRudder(axisValue: number | undefined) {
   if (axisValue === undefined || Math.abs(axisValue) < AXIS_DEADZONE) return 0;
-  return Math.max(-1, Math.min(1, axisValue * GAMEPAD_STEERING_SENSITIVITY));
+  return Math.max(-1, Math.min(1, -axisValue * GAMEPAD_STEERING_SENSITIVITY));
 }
 
 // Per the "Sailing Tactics Rudder" firmware spec, buttons 3-10 (buttons[2..9])
@@ -35,7 +35,7 @@ export function resolveDigitalRudderOverride(
   if (!mapping || !pad) return 0;
   const left = Boolean(pad.buttons[mapping.left]?.pressed);
   const right = Boolean(pad.buttons[mapping.right]?.pressed);
-  return (right ? 1 : 0) - (left ? 1 : 0);
+  return (left ? 1 : 0) - (right ? 1 : 0);
 }
 
 export function stepDigitalRudder(current: number, direction: number, dt: number): number {
