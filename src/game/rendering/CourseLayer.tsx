@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import type { Graphics as PixiGraphics } from "pixi.js";
 import type { CourseDefinition } from "../../sim/course/types";
-import type { LineSegment, Vec2 } from "../types";
+import type { LineSegment } from "../types";
 import { THEME } from "../theme";
 import { GraphicsShape } from "./GraphicsShape";
 
@@ -15,14 +15,6 @@ export function CourseLayer({ course }: CourseLayerProps) {
       graphics.clear();
 
       const { startLine, finishLine } = course;
-      const routePoints = buildRoutePoints(course);
-      if (routePoints.length > 1) {
-        graphics.moveTo(routePoints[0].x, routePoints[0].y);
-        for (const point of routePoints.slice(1)) {
-          graphics.lineTo(point.x, point.y);
-        }
-        graphics.stroke({ color: THEME.course.legLineColor, alpha: THEME.course.legLineAlpha, width: THEME.course.legLineWidth });
-      }
 
       graphics.moveTo(startLine.left.x, startLine.left.y);
       graphics.lineTo(startLine.right.x, startLine.right.y);
@@ -68,16 +60,18 @@ export function CourseLayer({ course }: CourseLayerProps) {
           style={{ fill: THEME.course.labelColor, fontFamily: THEME.text.fontFamily, fontSize: THEME.course.labelFontSize, fontWeight: "700" }}
         />
       ))}
-      {buildLegLabels(course).map((leg) => (
-        <pixiText
-          key={leg.label}
-          text={leg.label}
-          x={leg.position.x}
-          y={leg.position.y}
-          anchor={0.5}
-          style={{ fill: THEME.course.legLabelColor, fontFamily: THEME.text.fontFamily, fontSize: THEME.course.legLabelFontSize, fontWeight: "700" }}
-        />
-      ))}
+      <pixiText
+        text="起点/终点"
+        x={(course.startLine.left.x + course.startLine.right.x) / 2}
+        y={(course.startLine.left.y + course.startLine.right.y) / 2 + 38}
+        anchor={0.5}
+        style={{
+          fill: THEME.course.startLineColor,
+          fontFamily: THEME.text.fontFamily,
+          fontSize: THEME.course.legLabelFontSize,
+          fontWeight: "700"
+        }}
+      />
       {!sameLine(course.finishLine, course.startLine) && (
         <pixiText
           text="终点线"
@@ -94,36 +88,6 @@ export function CourseLayer({ course }: CourseLayerProps) {
       )}
     </pixiContainer>
   );
-}
-
-function buildRoutePoints(course: CourseDefinition): Vec2[] {
-  return [lineCenter(course.startLine), ...course.legMarkIds.map((markId) => course.marks.find((mark) => mark.id === markId)!.position), lineCenter(course.finishLine)];
-}
-
-function buildLegLabels(course: CourseDefinition): { label: string; position: Vec2 }[] {
-  const routePoints = buildRoutePoints(course);
-  return routePoints.slice(1).map((point, index) => {
-    const prev = routePoints[index];
-    const midpoint = { x: (prev.x + point.x) / 2, y: (prev.y + point.y) / 2 };
-    const dx = point.x - prev.x;
-    const dy = point.y - prev.y;
-    const length = Math.hypot(dx, dy) || 1;
-    const offset = 44 + (index % 2) * 18;
-    return {
-      label: `leg ${index + 1}`,
-      position: {
-        x: midpoint.x + (-dy / length) * offset,
-        y: midpoint.y + (dx / length) * offset
-      }
-    };
-  });
-}
-
-function lineCenter(line: LineSegment): Vec2 {
-  return {
-    x: (line.left.x + line.right.x) / 2,
-    y: (line.left.y + line.right.y) / 2
-  };
 }
 
 function sameLine(a: LineSegment, b: LineSegment): boolean {
