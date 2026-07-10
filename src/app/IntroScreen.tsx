@@ -13,7 +13,8 @@ import { PIXELS_PER_KNOT } from "../sim/boat/units";
 import { LessonStage } from "../lessons/LessonStage";
 import { useFixedStepLoop } from "../lessons/useFixedStepLoop";
 import { useGameStore } from "../store/gameStore";
-import { ComicSeekPanel, ComicShoutPanel } from "./intro/ComicPanels";
+import { ComicSeekPanel } from "./intro/ComicPanels";
+import { IntroVideoPanel } from "./intro/VideoPanel";
 import { LadderLayer } from "./intro/LadderLayer";
 import { RudderGauge } from "./intro/RudderGauge";
 import type { DemoBoat, DuelState, RaceRecording } from "./intro/introDemoSim";
@@ -46,7 +47,7 @@ const SLIDES: Slide[] = [
     kind: "text",
     title: "风看不见，他没法教",
     body: [],
-    extra: <ComicShoutPanel />
+    extra: <IntroVideoPanel src="/assets/coach-shout.mp4" label="动画：教练在艇上朝学员喊话，学员一脸疑惑" />
   },
   {
     kind: "text",

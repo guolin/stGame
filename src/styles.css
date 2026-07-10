@@ -2288,6 +2288,42 @@ input {
   display: block;
 }
 
+video.intro-comic {
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+
+.intro-video-wrap {
+  position: relative;
+  width: fit-content;
+  margin: 12px auto 0;
+}
+
+.intro-video-wrap .intro-comic {
+  margin-top: 0;
+  cursor: pointer;
+}
+
+.intro-video-play {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 96px;
+  height: 96px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 224, 130, 0.92);
+  color: #06243a;
+  font-size: 36px;
+  padding-left: 8px;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.intro-video-play:hover {
+  background: #ffe082;
+}
+
 .intro-illust {
   width: 320px;
   margin-top: 18px;
