@@ -1,16 +1,25 @@
 import { useEffect, useRef } from "react";
 import { useGameStore } from "../../store/gameStore";
 import type { BoatId } from "../types";
+import { DEFAULT_GAMEPAD_STEERING, gamepadSteeringResponse } from "./gamepadTuning";
+import type { GamepadSteeringSettings } from "./gamepadTuning";
 
 const BOAT_ORDER: BoatId[] = ["red", "green", "yellow", "blue"];
-const AXIS_DEADZONE = 0.02;
-const GAMEPAD_STEERING_SENSITIVITY = 2.6;
 const DIGITAL_RUDDER_RATE_PER_SEC = 7;
 const DIGITAL_RUDDER_RETURN_PER_SEC = 4;
 
-export function gamepadAxisToRudder(axisValue: number | undefined) {
-  if (axisValue === undefined || Math.abs(axisValue) < AXIS_DEADZONE) return 0;
-  return Math.max(-1, Math.min(1, -axisValue * GAMEPAD_STEERING_SENSITIVITY));
+export function gamepadAxisToRudder(axisValue: number | undefined, settings: GamepadSteeringSettings = DEFAULT_GAMEPAD_STEERING) {
+  if (axisValue === undefined) return 0;
+  const normalized = normalizeGamepadAxis(axisValue);
+  const magnitude = Math.abs(normalized);
+  const scaled = gamepadSteeringResponse(magnitude, settings);
+  if (scaled === 0) return 0;
+  return -Math.sign(normalized) * Math.max(0, Math.min(1, scaled));
+}
+
+export function normalizeGamepadAxis(axisValue: number) {
+  const raw = Math.max(-100, Math.min(100, axisValue));
+  return Math.max(-1, Math.min(1, Math.abs(raw) > 1 ? raw / 100 : raw));
 }
 
 // Per the "Sailing Tactics Rudder" firmware spec, buttons 3-10 (buttons[2..9])
@@ -59,11 +68,12 @@ export function resolveControllerPad(
 export function resolveAnalogRudder(
   pads: readonly RudderGamepad[],
   channel: number,
-  activeBoatCount: number
+  activeBoatCount: number,
+  settings: GamepadSteeringSettings = DEFAULT_GAMEPAD_STEERING
 ) {
   const { pad, localChannel } = resolveControllerPad(pads, channel, activeBoatCount);
   const axisValue = pad?.axes[localChannel] ?? pads[0]?.axes[channel];
-  return gamepadAxisToRudder(axisValue);
+  return gamepadAxisToRudder(axisValue, settings);
 }
 
 export function stepDigitalRudder(current: number, direction: number, dt: number): number {
@@ -77,6 +87,7 @@ export function stepDigitalRudder(current: number, direction: number, dt: number
 export function useGamepadControls() {
   const setControl = useGameStore((state) => state.setControl);
   const activeBoatIds = useGameStore((state) => state.activeBoatIds);
+  const gamepadSteering = useGameStore((state) => state.gamepadSteering);
   const lastRudderRef = useRef<Record<BoatId, number>>({ red: 0, blue: 0, green: 0, yellow: 0 });
   const digitalRudderRef = useRef<Record<BoatId, number>>({ red: 0, blue: 0, green: 0, yellow: 0 });
   const lastTimeRef = useRef<number | undefined>(undefined);
@@ -95,7 +106,7 @@ export function useGamepadControls() {
         const channel = BOAT_ORDER.indexOf(boatId);
         const { pad, localChannel } = resolveControllerPad(connected, channel, activeBoatIds.length);
         const digital = resolveDigitalRudderOverride(pad ?? connected[0], localChannel);
-        const analog = resolveAnalogRudder(connected, channel, activeBoatIds.length);
+        const analog = resolveAnalogRudder(connected, channel, activeBoatIds.length, gamepadSteering);
         const nextDigitalRudder = stepDigitalRudder(digitalRudderRef.current[boatId], digital, dt);
         digitalRudderRef.current = { ...digitalRudderRef.current, [boatId]: nextDigitalRudder };
         const rudder = Math.abs(nextDigitalRudder) > 0 ? nextDigitalRudder : analog;
@@ -114,5 +125,5 @@ export function useGamepadControls() {
       lastTimeRef.current = undefined;
       cancelAnimationFrame(frame);
     };
-  }, [activeBoatIds, setControl]);
+  }, [activeBoatIds, gamepadSteering, setControl]);
 }

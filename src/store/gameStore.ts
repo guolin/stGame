@@ -10,6 +10,8 @@ import { createRulesEngineState } from "../sim/rules/rulesEngine";
 import type { RulesEngineState } from "../sim/rules/rulesEngine";
 import type { DifficultyId, EnvironmentId, WindZoneCount } from "../sim/environment";
 import type { WindFieldConfig } from "../sim/wind/windField";
+import { DEFAULT_GAMEPAD_STEERING, sanitizeGamepadSteeringSettings } from "../game/loop/gamepadTuning";
+import type { GamepadSteeringSettings } from "../game/loop/gamepadTuning";
 
 export type SetupStep = "players" | "course" | "difficulty" | "environment" | "controllers";
 
@@ -30,6 +32,7 @@ type GameStore = {
   overlays: OverlaySettings;
   hudVisible: boolean;
   timeScale: number;
+  gamepadSteering: GamepadSteeringSettings;
   controls: Record<BoatId, BoatControls>;
   tick: (dt: number) => void;
   setView: (view: AppView) => void;
@@ -46,6 +49,7 @@ type GameStore = {
   toggleHud: () => void;
   togglePause: () => void;
   setTimeScale: (timeScale: number) => void;
+  setGamepadSteering: (settings: Partial<GamepadSteeringSettings>) => void;
   restart: () => void;
 };
 
@@ -80,6 +84,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   overlays: { ...INITIAL_OVERLAYS },
   hudVisible: true,
   timeScale: NORMAL_TIME_SCALE,
+  gamepadSteering: DEFAULT_GAMEPAD_STEERING,
   controls: createEmptyControls(),
   tick: (frameDt) => {
     const state = get();
@@ -183,6 +188,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }));
   },
   setTimeScale: (timeScale) => set({ timeScale: Math.max(1, Math.min(4, timeScale)) }),
+  setGamepadSteering: (settings) =>
+    set((state) => ({
+      gamepadSteering: sanitizeGamepadSteeringSettings({ ...state.gamepadSteering, ...settings })
+    })),
   restart: () => {
     const state = get();
     const env = buildEnvironment(state.difficulty, state.environment);
