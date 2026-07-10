@@ -73,7 +73,7 @@ export function stepSimulation(state: SimState, controls: Record<BoatId, BoatCon
   if (state.race.phase === "paused" || state.race.phase === "finished") return state;
 
   const dt = SIM_DT;
-  const elapsedMs = state.race.elapsedMs + dt * 1000;
+  const elapsedMs = state.race.phase === "racing" ? state.race.elapsedMs + dt * 1000 : state.race.elapsedMs;
   const elapsedSec = elapsedMs / 1000;
   const wind = globalWindAt(state.windField, elapsedSec);
   const windZones = updateWindZones(state.windZones, dt);
