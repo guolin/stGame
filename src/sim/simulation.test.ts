@@ -43,6 +43,14 @@ describe("stepSimulation", () => {
     expect(state.race.countdownMs).toBe(0);
   });
 
+  it("keeps race elapsed time at zero until the start signal", () => {
+    let state = createInitialSimState();
+    state = { ...state, race: { ...state.race, phase: "prestart", countdownMs: SIM_DT * 1000 } };
+    state = stepSimulation(state, scriptedControls(0));
+    expect(state.race.phase).toBe("racing");
+    expect(state.race.elapsedMs).toBe(0);
+  });
+
   it("does not mutate the input state", () => {
     let state = createInitialSimState();
     state = { ...state, race: { ...state.race, phase: "racing", countdownMs: 0 } };

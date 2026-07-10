@@ -9,7 +9,7 @@ export const WORLD = {
 
 export const INITIAL_RACE: RaceState = {
   phase: "prestart",
-  countdownMs: 30_000,
+  countdownMs: 20_000,
   elapsedMs: 0,
   ruleEvents: [],
   events: [],

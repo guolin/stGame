@@ -896,9 +896,9 @@ input {
 
 .segmented-options button.selected,
 .course-options button.selected {
-  border-color: #ffe082;
-  background: rgba(255, 224, 130, 0.18);
-  box-shadow: inset 0 0 0 1px rgba(255, 224, 130, 0.45);
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 224, 130, 0.34);
+  box-shadow: none;
 }
 
 .course-options.compact {
