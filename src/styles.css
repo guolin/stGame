@@ -2155,6 +2155,14 @@ input {
   margin: 4px 0;
 }
 
+.intro-comic {
+  width: min(58vw, 880px);
+  max-width: 100%;
+  height: auto;
+  margin-top: 12px;
+  display: block;
+}
+
 .intro-illust {
   width: 320px;
   margin-top: 18px;

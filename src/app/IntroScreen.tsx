@@ -13,6 +13,7 @@ import { PIXELS_PER_KNOT } from "../sim/boat/units";
 import { LessonStage } from "../lessons/LessonStage";
 import { useFixedStepLoop } from "../lessons/useFixedStepLoop";
 import { useGameStore } from "../store/gameStore";
+import { ComicSeekPanel, ComicShoutPanel } from "./intro/ComicPanels";
 import { LadderLayer } from "./intro/LadderLayer";
 import { RudderGauge } from "./intro/RudderGauge";
 import type { DemoBoat, DuelState, RaceRecording } from "./intro/introDemoSim";
@@ -40,6 +41,18 @@ const SLIDES: Slide[] = [
     brand: true,
     title: "Sailing Tactics",
     body: ["把看不见的风，画到屏幕上"]
+  },
+  {
+    kind: "text",
+    title: "风看不见，他没法教",
+    body: [],
+    extra: <ComicShoutPanel />
+  },
+  {
+    kind: "text",
+    title: "所以，他找到了我们",
+    body: [],
+    extra: <ComicSeekPanel />
   },
   {
     kind: "dark",
@@ -90,9 +103,9 @@ const SLIDES: Slide[] = [
   }
 ];
 
-const DARK_SLIDE = 1;
-const REPLAY_SLIDE = 2;
-const DUEL_SLIDE = 3;
+const DARK_SLIDE = 3;
+const REPLAY_SLIDE = 4;
+const DUEL_SLIDE = 5;
 
 const DEMO_COURSE: CourseDefinition = (() => {
   const startLine = { left: { x: 1000, y: DEMO_START_Y }, right: { x: 1800, y: DEMO_START_Y } };
