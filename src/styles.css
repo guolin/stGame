@@ -278,22 +278,112 @@ input {
 }
 
 .about-modal {
-  width: min(640px, calc(100vw - 68px));
+  position: relative;
+  width: min(900px, calc(100vw - 96px));
+  max-height: calc(100vh - 68px);
+  overflow: auto;
   border: 1px solid rgba(183, 233, 255, 0.3);
   border-radius: 8px;
   padding: 28px;
-  background: rgba(5, 36, 56, 0.96);
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 28px;
+  align-items: center;
+  background:
+    linear-gradient(145deg, rgba(9, 55, 82, 0.98), rgba(4, 31, 49, 0.98)),
+    rgba(5, 36, 56, 0.96);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
 }
 
+.about-team-image {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  object-position: center top;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.26));
+}
+
+.about-copy {
+  min-width: 0;
+  padding: 0;
+}
+
 .about-modal h2 {
-  margin: 6px 0 10px;
-  font-size: 34px;
+  margin: 0 0 12px;
+  max-width: 520px;
+  color: #f5fbff;
+  font-size: 32px;
+  line-height: 1.12;
+  letter-spacing: 0;
 }
 
 .about-modal p {
+  margin: 0;
   color: #dff7ff;
-  font-size: 18px;
+  font-size: 17px;
+  line-height: 1.52;
+}
+
+.about-lead {
+  max-width: 520px;
+}
+
+.about-role-grid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.about-role-grid article {
+  min-height: 92px;
+  padding: 12px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  border: 1px solid rgba(216, 245, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(3, 25, 42, 0.36);
+}
+
+.about-role-grid strong {
+  color: #ffe082;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.about-role-grid span {
+  color: #f0fbff;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.38;
+}
+
+.about-closing {
+  margin-top: 18px !important;
+  padding-top: 14px;
+  border-top: 1px solid rgba(216, 245, 255, 0.2);
+  color: #bff1ff !important;
+  font-weight: 800;
+}
+
+@media (max-width: 980px) {
+  .about-modal {
+    width: min(680px, calc(100vw - 48px));
+    grid-template-columns: 1fr;
+  }
+
+  .about-team-image {
+    width: min(280px, 100%);
+    justify-self: center;
+  }
+
+  .about-role-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .teaching-grid,

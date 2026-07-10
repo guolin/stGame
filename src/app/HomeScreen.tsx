@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useGameStore } from "../store/gameStore";
 import { FocusableButton } from "./navigation/FocusableButton";
 import { RaceSetupDialog } from "./RaceSetupDialog";
@@ -7,7 +7,24 @@ import { HomeStageBackground } from "./HomeStageBackground";
 export function HomeScreen() {
   const [setupOpen, setSetupOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [restoreAboutFocus, setRestoreAboutFocus] = useState(false);
   const setView = useGameStore((state) => state.setView);
+
+  useEffect(() => {
+    if (!restoreAboutFocus) return;
+    const timer = window.setTimeout(() => setRestoreAboutFocus(false), 0);
+    return () => window.clearTimeout(timer);
+  }, [restoreAboutFocus]);
+
+  const openAbout = () => {
+    setRestoreAboutFocus(false);
+    setAboutOpen(true);
+  };
+
+  const closeAbout = () => {
+    setAboutOpen(false);
+    setRestoreAboutFocus(true);
+  };
 
   return (
     <main className="demo-screen home-screen">
@@ -33,7 +50,7 @@ export function HomeScreen() {
         </figure>
       </section>
       <footer className="home-footer">
-        <FocusableButton type="button" onClick={() => setAboutOpen(true)}>
+        <FocusableButton type="button" onClick={openAbout} autoFocus={restoreAboutFocus}>
           关于我们
         </FocusableButton>
         <FocusableButton type="button" onClick={() => setView("intro")}>
@@ -44,13 +61,32 @@ export function HomeScreen() {
       {aboutOpen ? (
         <div className="modal-scrim" role="presentation">
           <section className="about-modal" role="dialog" aria-modal="true" aria-labelledby="about-title">
-            <p className="eyebrow">About</p>
-            <h2 id="about-title">关于我们</h2>
-            <p>团队成员信息将在这里补充。</p>
-            <div className="modal-actions">
-              <FocusableButton type="button" className="accent" onClick={() => setAboutOpen(false)} autoFocus>
-                关闭
-              </FocusableButton>
+            <img className="about-team-image" src="/assets/sailing-tactics-team.png" alt="Sailing Tactics 研发团队" />
+            <div className="about-copy">
+              <h2 id="about-title">Sailing Tactics 研发团队</h2>
+              <p className="about-lead">
+                我们是五位 5 至 9 年级少创客。围绕“让帆船运动触手可及”的目标，我们把航线判断、读风技巧与竞赛规则，转化为更易上手的数字网页游戏。
+              </p>
+              <div className="about-role-grid" aria-label="团队分工">
+                <article>
+                  <strong>软件研发</strong>
+                  <span>袁嘉佑（Pai） · 陈新宇 · Charan</span>
+                </article>
+                <article>
+                  <strong>硬件与视觉</strong>
+                  <span>崔书菡</span>
+                </article>
+                <article>
+                  <strong>交互与演示</strong>
+                  <span>Emily</span>
+                </article>
+              </div>
+              <p className="about-closing">用技术降低学习门槛，让更多人感受乘风前行的乐趣。</p>
+              <div className="modal-actions">
+                <FocusableButton type="button" className="accent" onClick={closeAbout} autoFocus>
+                  关闭
+                </FocusableButton>
+              </div>
             </div>
           </section>
         </div>
