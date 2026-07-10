@@ -807,7 +807,7 @@ input {
 .segmented-options button.selected,
 .course-options button.selected {
   border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(255, 224, 130, 0.18);
+  background: rgba(255, 224, 130, 0.34);
   box-shadow: none;
 }
 
