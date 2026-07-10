@@ -3,7 +3,7 @@ import { useGameStore } from "../store/gameStore";
 import { FocusableButton } from "./navigation/FocusableButton";
 import { RaceSetupDialog } from "./RaceSetupDialog";
 import { HomeStageBackground } from "./HomeStageBackground";
-import { gamepadAxisToRudder } from "../game/loop/gamepadControls";
+import { gamepadAxisToRudder, normalizeGamepadAxis } from "../game/loop/gamepadControls";
 import type { GamepadSteeringSettings } from "../game/loop/gamepadTuning";
 import { BoatSprite } from "../game/rendering/BoatSprite";
 import { WaterLayer } from "../game/rendering/WaterLayer";
@@ -18,7 +18,9 @@ export function HomeScreen() {
   const [setupOpen, setSetupOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [gamepadOpen, setGamepadOpen] = useState(false);
+  const [rudderDemoOpen, setRudderDemoOpen] = useState(false);
   const [restoreAboutFocus, setRestoreAboutFocus] = useState(false);
+  const [restoreRudderDemoFocus, setRestoreRudderDemoFocus] = useState(false);
   const setView = useGameStore((state) => state.setView);
 
   useEffect(() => {
@@ -26,6 +28,12 @@ export function HomeScreen() {
     const timer = window.setTimeout(() => setRestoreAboutFocus(false), 0);
     return () => window.clearTimeout(timer);
   }, [restoreAboutFocus]);
+
+  useEffect(() => {
+    if (!restoreRudderDemoFocus) return;
+    const timer = window.setTimeout(() => setRestoreRudderDemoFocus(false), 0);
+    return () => window.clearTimeout(timer);
+  }, [restoreRudderDemoFocus]);
 
   const openAbout = () => {
     setRestoreAboutFocus(false);
@@ -35,6 +43,16 @@ export function HomeScreen() {
   const closeAbout = () => {
     setAboutOpen(false);
     setRestoreAboutFocus(true);
+  };
+
+  const openRudderDemo = () => {
+    setRestoreRudderDemoFocus(false);
+    setRudderDemoOpen(true);
+  };
+
+  const closeRudderDemo = () => {
+    setRudderDemoOpen(false);
+    setRestoreRudderDemoFocus(true);
   };
 
   return (
@@ -67,12 +85,16 @@ export function HomeScreen() {
         <FocusableButton type="button" onClick={() => setGamepadOpen(true)}>
           手柄测试
         </FocusableButton>
+        <FocusableButton type="button" onClick={openRudderDemo} autoFocus={restoreRudderDemoFocus}>
+          船舵展示
+        </FocusableButton>
         <FocusableButton type="button" onClick={() => setView("intro")}>
           项目介绍
         </FocusableButton>
       </footer>
       {setupOpen ? <RaceSetupDialog onClose={() => setSetupOpen(false)} /> : null}
       {gamepadOpen ? <GamepadTestDialog onClose={() => setGamepadOpen(false)} /> : null}
+      {rudderDemoOpen ? <RudderDemoDialog onClose={closeRudderDemo} /> : null}
       {aboutOpen ? (
         <div className="modal-scrim" role="presentation">
           <section className="about-modal" role="dialog" aria-modal="true" aria-labelledby="about-title">
@@ -107,6 +129,50 @@ export function HomeScreen() {
         </div>
       ) : null}
     </main>
+  );
+}
+
+function RudderDemoDialog({ onClose }: { onClose: () => void }) {
+  const demo = useRudderDemo();
+
+  return (
+    <div className="modal-scrim" role="presentation">
+      <section className="rudder-demo-modal" role="dialog" aria-modal="true" aria-labelledby="rudder-demo-title">
+        <header className="rudder-demo-header">
+          <div>
+            <p className="eyebrow">Rudder</p>
+            <h2 id="rudder-demo-title">船舵展示</h2>
+          </div>
+          <div className="rudder-demo-readout" aria-label="船舵输入">
+            <span>手柄 {demo.connected ? "已连接" : "未连接"}</span>
+            <span>输入 {Math.round(demo.axis)}</span>
+            <span>舵量 {Math.round(demo.rudder * 100)}%</span>
+          </div>
+          <FocusableButton type="button" className="accent" onClick={onClose} autoFocus>
+            返回主页
+          </FocusableButton>
+        </header>
+        <div className="rudder-demo-stage" aria-label="船舵展示运行区">
+          <svg viewBox="0 0 1200 720" role="img" aria-label="手柄控制船舵和船只转向">
+            <rect width="1200" height="720" />
+            <path className="rudder-demo-wave" d="M0 120 C180 80 300 154 480 112 S780 82 960 126 1110 152 1200 122" />
+            <path className="rudder-demo-wave" d="M0 520 C150 480 320 550 470 512 S760 480 930 520 1090 560 1200 518" />
+            <g transform={`translate(${demo.x} ${demo.y}) rotate(${demo.heading})`}>
+              <path className="rudder-demo-hull-shadow" d="M0 -76 C36 -58 50 -2 36 54 C22 84 -22 84 -36 54 C-50 -2 -36 -58 0 -76 Z" />
+              <path className="rudder-demo-hull" d="M0 -76 C36 -58 50 -2 36 54 C22 84 -22 84 -36 54 C-50 -2 -36 -58 0 -76 Z" />
+              <path className="rudder-demo-deck" d="M0 -60 C26 -44 36 -2 26 42 C16 62 -16 62 -26 42 C-36 -2 -26 -44 0 -60 Z" />
+              <line className="rudder-demo-panel" x1="-23" y1="-28" x2="23" y2="-28" />
+              <line className="rudder-demo-panel" x1="-30" y1="22" x2="30" y2="22" />
+              <line className="rudder-demo-panel" x1="0" y1="-58" x2="0" y2="64" />
+              <circle className="rudder-demo-cockpit" cx="0" cy="16" r="19" />
+              <g transform={`translate(0 66) rotate(${demo.rudderAngle})`}>
+                <rect className="rudder-demo-rudder" x="-6" y="-2" width="12" height="44" />
+              </g>
+            </g>
+          </svg>
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -264,6 +330,71 @@ function useGamepadPreview(settings: GamepadSteeringSettings, manualAxis: number
   }, [manualAxis, settings]);
 
   return preview;
+}
+
+const RUDDER_DEMO_SPEED_MULTIPLIER = 1;
+const RUDDER_DEMO_BASE_SPEED = 120;
+const RUDDER_DEMO_TURN_RATE_DEG = 82;
+const RUDDER_DEMO_RUDDER_MAX_DEG = 38;
+const RUDDER_DEMO_DEADZONE = 0.05;
+
+function useRudderDemo() {
+  const stateRef = useRef({ x: 600, y: 360, heading: -18 });
+  const [demo, setDemo] = useState(() => ({
+    ...stateRef.current,
+    axis: 0,
+    rudder: 0,
+    rudderAngle: 0,
+    connected: false
+  }));
+
+  useEffect(() => {
+    let frame = 0;
+    let lastTime: number | undefined;
+
+    const tick = (time: number) => {
+      if (lastTime === undefined) lastTime = time;
+      const rawDt = Math.min(0.05, (time - lastTime) / 1000);
+      lastTime = time;
+      const dt = rawDt * RUDDER_DEMO_SPEED_MULTIPLIER;
+      const gamepads = navigator.getGamepads?.() ?? [];
+      const first = Array.from(gamepads).find((pad): pad is Gamepad => Boolean(pad?.connected));
+      const axis = first?.axes[0] ?? 0;
+      const rudder = rudderDemoAxisToRudder(axis);
+      const nextHeading = stateRef.current.heading - rudder * RUDDER_DEMO_TURN_RATE_DEG * dt;
+      const rad = ((nextHeading - 90) * Math.PI) / 180;
+      const nextX = wrapValue(stateRef.current.x + Math.cos(rad) * RUDDER_DEMO_BASE_SPEED * dt, -70, 1270);
+      const nextY = wrapValue(stateRef.current.y + Math.sin(rad) * RUDDER_DEMO_BASE_SPEED * dt, -70, 790);
+
+      stateRef.current = { x: nextX, y: nextY, heading: nextHeading };
+      setDemo({
+        ...stateRef.current,
+        axis,
+        rudder,
+        rudderAngle: rudder * RUDDER_DEMO_RUDDER_MAX_DEG,
+        connected: Boolean(first)
+      });
+      frame = requestAnimationFrame(tick);
+    };
+
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  return demo;
+}
+
+function rudderDemoAxisToRudder(axisValue: number | undefined) {
+  if (axisValue === undefined) return 0;
+  const normalized = normalizeGamepadAxis(axisValue);
+  if (Math.abs(normalized) <= RUDDER_DEMO_DEADZONE) return 0;
+  return Object.is(normalized, -0) ? 0 : normalized;
+}
+
+function wrapValue(value: number, min: number, max: number) {
+  if (value < min) return max;
+  if (value > max) return min;
+  return value;
 }
 
 function toPreviewBoat(motion: BoatMotionState): BoatState {
