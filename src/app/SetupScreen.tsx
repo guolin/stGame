@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { resolveControllerPad } from "../game/loop/gamepadControls";
 import { COURSE_IDS, getCourse } from "../sim/course/courses";
 import { DIFFICULTY_IDS, DIFFICULTY_LABEL, ENVIRONMENT_IDS, ENVIRONMENT_LABEL } from "../sim/environment";
 import type { SetupStep } from "../store/gameStore";
@@ -244,14 +245,16 @@ function ControllersStep() {
   return (
     <div className="controller-check">
       {activeBoatIds.map((boatId, index) => {
-        const pad = connected[index];
+        const { pad, localChannel } = resolveControllerPad(connected, index, activeBoatIds.length);
         return (
           <div key={boatId} className="controller-row">
             <strong>
               {index + 1}号船 · 通道{index + 1}
             </strong>
             {pad ? (
-              <span className="ok">已连接 {pad.id.slice(0, 28)} · 舵 {Math.round((pad.axes[0] ?? 0) * 100)}%</span>
+              <span className="ok">
+                已连接 {(pad.id ?? "手柄").slice(0, 28)} · 终端通道{localChannel + 1} · 舵 {Math.round((pad.axes[localChannel] ?? 0) * 100)}%
+              </span>
             ) : (
               <span className="fallback">未检测到手柄 · 使用键盘兜底（{["A/D", "←/→", "J/L", "小键盘4/6"][index]}）</span>
             )}

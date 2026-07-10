@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { gamepadAxisToRudder, resolveDigitalRudderOverride, stepDigitalRudder } from "./gamepadControls";
+import { gamepadAxisToRudder, resolveAnalogRudder, resolveControllerPad, resolveDigitalRudderOverride, stepDigitalRudder } from "./gamepadControls";
 
 describe("gamepadAxisToRudder", () => {
   it("amplifies and reverses axis 0 direction as continuous rudder input", () => {
@@ -19,6 +19,10 @@ function pad(pressedIndexes: number[]) {
   const maxIndex = Math.max(0, ...pressedIndexes);
   const buttons = Array.from({ length: maxIndex + 1 }, (_, i) => ({ pressed: pressedIndexes.includes(i) }));
   return { buttons };
+}
+
+function controller(axes: number[], pressedIndexes: number[] = []) {
+  return { axes, buttons: pad(pressedIndexes).buttons, connected: true };
 }
 
 describe("resolveDigitalRudderOverride", () => {
@@ -44,6 +48,29 @@ describe("resolveDigitalRudderOverride", () => {
   it("returns 0 for an unmapped channel or missing gamepad", () => {
     expect(resolveDigitalRudderOverride(pad([2]), 4)).toBe(0);
     expect(resolveDigitalRudderOverride(undefined, 0)).toBe(0);
+  });
+});
+
+describe("resolveControllerPad", () => {
+  it("uses one Gamepad per boat when enough individual controllers are connected", () => {
+    const pads = [controller([0.1]), controller([0.2]), controller([0.3]), controller([0.4])];
+    expect(resolveControllerPad(pads, 2, 4)).toEqual({ pad: pads[2], localChannel: 0 });
+    expect(resolveAnalogRudder(pads, 2, 4)).toBeCloseTo(-0.78, 6);
+  });
+
+  it("splits two ADV terminals into two local channels each for four boats", () => {
+    const pads = [controller([0.1, 0.2]), controller([0.3, 0.4])];
+    expect(resolveControllerPad(pads, 0, 4)).toEqual({ pad: pads[0], localChannel: 0 });
+    expect(resolveControllerPad(pads, 1, 4)).toEqual({ pad: pads[0], localChannel: 1 });
+    expect(resolveControllerPad(pads, 2, 4)).toEqual({ pad: pads[1], localChannel: 0 });
+    expect(resolveControllerPad(pads, 3, 4)).toEqual({ pad: pads[1], localChannel: 1 });
+    expect(resolveAnalogRudder(pads, 3, 4)).toBe(-1);
+  });
+
+  it("keeps a single four-channel ADV compatible with all four boats", () => {
+    const pads = [controller([0.1, 0.2, 0.3, 0.4])];
+    expect(resolveControllerPad(pads, 3, 4)).toEqual({ pad: pads[0], localChannel: 3 });
+    expect(resolveAnalogRudder(pads, 2, 4)).toBeCloseTo(-0.78, 6);
   });
 });
 

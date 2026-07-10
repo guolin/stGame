@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import type { Graphics as PixiGraphics } from "pixi.js";
 import type { BoatState } from "../types";
 import { THEME } from "../theme";
+import { clamp } from "../utils/math";
 import { GraphicsShape } from "./GraphicsShape";
 
 type BoatSpriteProps = {
@@ -9,19 +10,6 @@ type BoatSpriteProps = {
 };
 
 export function BoatSprite({ boat }: BoatSpriteProps) {
-  const drawWake = useCallback(
-    (graphics: PixiGraphics) => {
-      graphics.clear();
-      const wake = Math.min(120, 42 + boat.speed * 0.52);
-      graphics.moveTo(boat.position.x - 14, boat.position.y + 20);
-      graphics.lineTo(boat.position.x - 42, boat.position.y + wake);
-      graphics.moveTo(boat.position.x + 14, boat.position.y + 20);
-      graphics.lineTo(boat.position.x + 42, boat.position.y + wake);
-      graphics.stroke({ color: THEME.boat.wakeColor, alpha: THEME.boat.wakeAlpha, width: THEME.boat.wakeWidth });
-    },
-    [boat.position.x, boat.position.y, boat.speed]
-  );
-
   const drawBoat = useCallback(
     (graphics: PixiGraphics) => {
       graphics.clear();
@@ -31,23 +19,23 @@ export function BoatSprite({ boat }: BoatSpriteProps) {
       graphics.lineTo(-24, 38);
       graphics.lineTo(0, -48);
       graphics.fill(THEME.boat.hullFillColor).stroke({ color: boat.color, width: THEME.boat.hullStrokeWidth });
-      graphics.moveTo(0, -38);
-      graphics.lineTo(0, 40);
-      graphics.stroke({ color: THEME.boat.mastColor, width: THEME.boat.mastWidth });
-      // Boom swings to the leeward side: port side on starboard tack.
       const side = boat.tack === "starboard" ? -1 : 1;
-      graphics.moveTo(side * 4, -32);
-      graphics.lineTo(side * 4, 28);
-      graphics.lineTo(side * 32, 16);
-      graphics.lineTo(side * 4, -32);
-      graphics.fill({ color: boat.color, alpha: THEME.boat.sailAlpha });
+      const boomRoot = { x: side * 4, y: 6 };
+      const boomAngleRad = (clamp(boat.sailAngleDeg, 8, 89) * Math.PI) / 180;
+      const boomLength = 46;
+      const boomTip = {
+        x: boomRoot.x + side * Math.sin(boomAngleRad) * boomLength,
+        y: boomRoot.y - Math.cos(boomAngleRad) * boomLength
+      };
+      graphics.moveTo(boomRoot.x, boomRoot.y);
+      graphics.lineTo(boomTip.x, boomTip.y);
+      graphics.stroke({ color: boat.color, width: THEME.boat.mastWidth + 3 });
     },
-    [boat.color, boat.tack]
+    [boat.color, boat.sailAngleDeg, boat.tack]
   );
 
   return (
     <pixiContainer>
-      <GraphicsShape draw={drawWake} />
       <pixiContainer x={boat.position.x} y={boat.position.y} rotation={(boat.headingDeg * Math.PI) / 180}>
         <GraphicsShape draw={drawBoat} />
       </pixiContainer>
