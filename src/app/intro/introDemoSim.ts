@@ -1,21 +1,20 @@
-import type { Vec2, WindZoneState } from "../../game/types";
+import type { Vec2 } from "../../game/types";
 import { clamp, normalizeDeg } from "../../game/utils/math";
 import type { BoatMotionState, LocalWind, Tack } from "../../sim/boat/boatPhysics";
 import { createBoatMotionState, stepBoatPhysics } from "../../sim/boat/boatPhysics";
 import { PIXELS_PER_KNOT } from "../../sim/boat/units";
-import type { WindFieldConfig } from "../../sim/wind/windField";
-import { getLocalWind } from "../../sim/wind/windField";
 
 /**
- * Scripted intro-demo simulations, all driven by real boat physics.
+ * Intro-demo simulation, all real boat physics.
  *
- * Act 1 (shift demo): one continuous upwind leg from the start line to
- * mark 1. The wind veers once and stays; red went right and plays the
- * shift, blue banged the left corner — a clear gap at the mark.
+ * Acts 1+2 (recorded race): two identical boats — same hull, same polar,
+ * so the same speed — race one upwind leg while the wind veers 350° → 10°.
+ * The race is recorded once; the "dark" page plays it with no wind drawn
+ * (the on-the-water experience) and the next page replays the exact same
+ * frames with the wind painted on.
  *
- * Act 2 (zone demo): steady wind, but the field has wind zones. Red's
- * route threads the strong/lifted zone, blue's runs through the soft
- * patch — planning beats pointing.
+ * Act 3 (live duel): the presenter helms red against the same blue AI,
+ * reading the same scripted veer.
  */
 
 export type DemoBoat = {
@@ -23,79 +22,216 @@ export type DemoBoat = {
   track: Vec2[];
   /** The tack the boat's strategy wants, independent of mid-tack heading. */
   tackHeld: Tack;
-};
-
-export type IntroDemoState = {
-  simTimeSec: number;
-  windDeg: number;
-  /** Deviation from the base direction, for the HUD readout. */
-  windOscDeg: number;
-  red: DemoBoat;
-  blue: DemoBoat;
-  /** Race time (sim seconds) each boat reached mark 1, once it has. */
-  redAtMarkSec?: number;
-  blueAtMarkSec?: number;
-  finished: boolean;
+  /** Intro playback wants one readable side choice, not a full race AI. */
+  tackChanges: number;
 };
 
 export const DEMO_BASE_WIND_DEG = 0;
 export const DEMO_WIND_SPEED_KNOTS = 12;
-/** The shift starts left of the base and veers through it: 355° → 15°. */
-export const DEMO_SHIFT_FROM_DEG = -5;
-export const DEMO_SHIFT_TO_DEG = 15;
+export const DEMO_READOUT_SPEED_KNOTS = 3.3;
+/** The veer runs from 350° through to 010°. */
+export const DEMO_SHIFT_FROM_DEG = -10;
+export const DEMO_SHIFT_TO_DEG = 10;
+/** Playback compression for the recorded race. */
 export const DEMO_TIME_SCALE = 3;
+/** The live duel runs gentler so a human can steer. */
+export const DUEL_TIME_SCALE = 2;
 export const DEMO_MARK: Vec2 = { x: 1400, y: 300 };
 export const DEMO_START_Y = 1620;
 
+const DT = 1 / 60;
 const SHIFT_GRACE_SEC = 4;
 const SHIFT_RATE_DEG_PER_SEC = 1.2;
 /** Boats commit to their side off the line before sailing the shifts. */
 const SPLIT_HOLD_SEC = 14;
 const CLOSE_HAULED_DEG = 45;
-const TACK_HYSTERESIS_DEG = 12;
-const ARENA_LEFT = 380;
-const ARENA_RIGHT = 2420;
-const FINISH_RADIUS = 240;
+const RED_RETURN_LAYLINE_X = 1980;
+const BLUE_RETURN_LAYLINE_X = 600;
+const ARENA_LEFT = 360;
+const ARENA_RIGHT = 2440;
+const FINISH_RADIUS = 120;
 const STEER_GAIN = 0.045;
 const TRACK_SPACING = 24;
-const TRACK_LIMIT = 700;
-const WAYPOINT_RADIUS = 220;
+const TRACK_LIMIT = 900;
+const MAX_RACE_SEC = 220;
 
 /** 1 knot ≈ 0.5144 m/s, so world pixels per real-world meter. */
 export const PIXELS_PER_METER = PIXELS_PER_KNOT / 0.5144;
 
 function startingBoats(): { red: DemoBoat; blue: DemoBoat } {
   const speed = 3.2 * PIXELS_PER_KNOT;
+  const redMotion = createBoatMotionState({ position: { x: 1450, y: DEMO_START_Y }, headingDeg: 45, speed });
+  const blueMotion = createBoatMotionState({ position: { x: 1350, y: DEMO_START_Y }, headingDeg: 315, speed });
   return {
     red: {
-      motion: createBoatMotionState({ position: { x: 1450, y: DEMO_START_Y }, headingDeg: 45, speed }),
+      motion: { ...redMotion, tack: "port" },
       track: [],
-      tackHeld: "port"
+      tackHeld: "port",
+      tackChanges: 0
     },
     blue: {
-      motion: createBoatMotionState({ position: { x: 1350, y: DEMO_START_Y }, headingDeg: 315, speed }),
+      motion: { ...blueMotion, tack: "starboard" },
       track: [],
-      tackHeld: "starboard"
+      tackHeld: "starboard",
+      tackChanges: 0
     }
   };
 }
 
-export function createIntroDemoState(): IntroDemoState {
-  return {
-    simTimeSec: 0,
-    windDeg: normalizeDeg(DEMO_BASE_WIND_DEG + DEMO_SHIFT_FROM_DEG),
-    windOscDeg: DEMO_SHIFT_FROM_DEG,
-    ...startingBoats(),
-    finished: false
-  };
-}
-
-/** One continuous veer from 355° to 15°, starting right away after a short grace. */
+/** One continuous veer from 350° to 10°, starting right away after a short grace. */
 export function demoWindOscDeg(timeSec: number): number {
   const swing = DEMO_SHIFT_TO_DEG - DEMO_SHIFT_FROM_DEG;
   const progressed = Math.max(0, timeSec - SHIFT_GRACE_SEC) * SHIFT_RATE_DEG_PER_SEC;
   return DEMO_SHIFT_FROM_DEG + Math.min(swing, progressed);
 }
+
+// ---------- recorded race (acts 1 and 2) ----------
+
+export type RaceFrame = {
+  timeSec: number;
+  windDeg: number;
+  windOscDeg: number;
+  red: BoatMotionState;
+  blue: BoatMotionState;
+  redTrackLen: number;
+  blueTrackLen: number;
+};
+
+export type RaceRecording = {
+  frames: RaceFrame[];
+  redTrack: Vec2[];
+  blueTrack: Vec2[];
+  redAtMarkSec: number;
+  blueAtMarkSec: number;
+};
+
+/** Run the whole race once, deterministically, and keep every sim frame. */
+export function recordIntroRace(): RaceRecording {
+  let { red, blue } = startingBoats();
+  let redAtMarkSec: number | undefined;
+  let blueAtMarkSec: number | undefined;
+  const frames: RaceFrame[] = [];
+  let timeSec = 0;
+
+  while (timeSec < MAX_RACE_SEC) {
+    timeSec += DT;
+    const windOscDeg = demoWindOscDeg(timeSec);
+    const windDeg = normalizeDeg(DEMO_BASE_WIND_DEG + windOscDeg);
+    const wind: LocalWind = { directionDeg: windDeg, speedKnots: DEMO_WIND_SPEED_KNOTS };
+
+    if (redAtMarkSec === undefined) {
+      red = stepDemoBoat(red, chooseMarkTack(red, windDeg, timeSec), wind, DT);
+      if (isAtMark(red.motion.position)) {
+        redAtMarkSec = timeSec;
+        red = finishAtMark(red);
+      }
+    }
+    if (blueAtMarkSec === undefined) {
+      blue = stepDemoBoat(blue, chooseMarkTack(blue, windDeg, timeSec), wind, DT);
+      if (isAtMark(blue.motion.position)) {
+        blueAtMarkSec = timeSec;
+        blue = finishAtMark(blue);
+      }
+    }
+
+    frames.push({
+      timeSec,
+      windDeg,
+      windOscDeg,
+      red: red.motion,
+      blue: blue.motion,
+      redTrackLen: red.track.length,
+      blueTrackLen: blue.track.length
+    });
+
+    // Hold the final tableau for a moment, then stop recording.
+    if (redAtMarkSec !== undefined && blueAtMarkSec !== undefined && timeSec > blueAtMarkSec + 1) break;
+  }
+
+  return {
+    frames,
+    redTrack: red.track,
+    blueTrack: blue.track,
+    redAtMarkSec: redAtMarkSec ?? MAX_RACE_SEC,
+    blueAtMarkSec: blueAtMarkSec ?? MAX_RACE_SEC
+  };
+}
+
+// ---------- live duel (act 3) ----------
+
+export type DuelState = {
+  simTimeSec: number;
+  windDeg: number;
+  windOscDeg: number;
+  red: DemoBoat;
+  blue: DemoBoat;
+  redAtMarkSec?: number;
+  blueAtMarkSec?: number;
+  finished: boolean;
+  /** Emergency stand-in helm if the hardware dies mid-pitch. */
+  autopilot: boolean;
+};
+
+export function createDuelState(): DuelState {
+  return {
+    simTimeSec: 0,
+    windDeg: normalizeDeg(DEMO_BASE_WIND_DEG + DEMO_SHIFT_FROM_DEG),
+    windOscDeg: DEMO_SHIFT_FROM_DEG,
+    ...startingBoats(),
+    finished: false,
+    autopilot: false
+  };
+}
+
+export function stepDuel(state: DuelState, playerRudder: number, dt: number): DuelState {
+  if (state.finished) return state;
+
+  let { simTimeSec, windDeg, windOscDeg, red, blue, redAtMarkSec, blueAtMarkSec } = state;
+  let finished: boolean = state.finished;
+
+  for (let i = 0; i < DUEL_TIME_SCALE && !finished; i += 1) {
+    simTimeSec += dt;
+    windOscDeg = demoWindOscDeg(simTimeSec);
+    windDeg = normalizeDeg(DEMO_BASE_WIND_DEG + windOscDeg);
+    const wind: LocalWind = { directionDeg: windDeg, speedKnots: DEMO_WIND_SPEED_KNOTS };
+
+    if (redAtMarkSec === undefined) {
+      red = state.autopilot
+        ? stepDemoBoat(red, chooseMarkTack(red, windDeg, simTimeSec), wind, dt)
+        : stepPlayerBoat(red, playerRudder, wind, dt);
+      if (isAtMark(red.motion.position)) {
+        redAtMarkSec = simTimeSec;
+        red = finishAtMark(red);
+      }
+    }
+    if (blueAtMarkSec === undefined) {
+      blue = stepDemoBoat(blue, chooseMarkTack(blue, windDeg, simTimeSec), wind, dt);
+      if (isAtMark(blue.motion.position)) {
+        blueAtMarkSec = simTimeSec;
+        blue = finishAtMark(blue);
+      }
+    }
+    finished = redAtMarkSec !== undefined && blueAtMarkSec !== undefined;
+  }
+
+  return { ...state, simTimeSec, windDeg, windOscDeg, red, blue, redAtMarkSec, blueAtMarkSec, finished };
+}
+
+function stepPlayerBoat(boat: DemoBoat, rudder: number, wind: LocalWind, dt: number): DemoBoat {
+  const motion = stepBoatPhysics({
+    motion: boat.motion,
+    rudder: clamp(rudder, -1, 1),
+    boatType: "op",
+    wind,
+    penaltyFactor: 1,
+    dt
+  });
+  motion.position.x = clamp(motion.position.x, 60, 2740);
+  motion.position.y = clamp(motion.position.y, 60, 1740);
+  return { motion, track: appendTrack(boat.track, motion.position), tackHeld: motion.tack, tackChanges: boat.tackChanges };
+}
+
+// ---------- shared helm logic ----------
 
 /** Close-hauled compass heading for a tack: wind over port side means heading right of the wind. */
 export function targetHeadingForTack(tack: Tack, windDeg: number): number {
@@ -103,9 +239,8 @@ export function targetHeadingForTack(tack: Tack, windDeg: number): number {
 }
 
 /**
- * Tack-on-headers strategy: hold the tack whose close-hauled heading points
- * closer at the target, with hysteresis so the boat doesn't flap when the
- * target is dead upwind.
+ * Hold the tack whose close-hauled heading points closer at the target,
+ * with hysteresis so the boat doesn't flap when the target is dead upwind.
  */
 export function chooseAdaptiveTack(input: {
   position: Vec2;
@@ -122,11 +257,23 @@ export function chooseAdaptiveTack(input: {
   return otherDiff + hysteresisDeg < currentDiff ? other : currentTack;
 }
 
-/** Shift-blind strategy: only tack when running out of water at the edges. */
+/** Only tack when running out of water at the arena edges. */
 export function chooseCornerTack(x: number, currentTack: Tack): Tack {
   if (x < ARENA_LEFT) return "port";
   if (x > ARENA_RIGHT) return "starboard";
   return currentTack;
+}
+
+/** Sail for the mark, holding the chosen side off the line, with an arena guard. */
+function chooseMarkTack(boat: DemoBoat, _windDeg: number, simTimeSec: number): Tack {
+  if (boat.tackChanges >= 1) return boat.tackHeld;
+  if (simTimeSec < SPLIT_HOLD_SEC) return boat.tackHeld;
+
+  if (boat.tackHeld === "port" && boat.motion.position.x >= RED_RETURN_LAYLINE_X) return "starboard";
+  if (boat.tackHeld === "starboard" && boat.motion.position.x <= BLUE_RETURN_LAYLINE_X) return "port";
+
+  const guarded = chooseCornerTack(boat.motion.position.x, boat.tackHeld);
+  return guarded !== boat.tackHeld ? guarded : boat.tackHeld;
 }
 
 /** Race-truth lead: how many meters further from the mark blue is than red. */
@@ -136,158 +283,13 @@ export function leadMeters(red: Vec2, blue: Vec2, mark: Vec2 = DEMO_MARK): numbe
   return (blueDist - redDist) / PIXELS_PER_METER;
 }
 
-export function boatSpeedKnots(boat: DemoBoat): number {
-  return boat.motion.speed / PIXELS_PER_KNOT;
+export function speedKnotsOf(motion: BoatMotionState): number {
+  return motion.speed / PIXELS_PER_KNOT;
 }
-
-export function stepIntroDemo(state: IntroDemoState, dt: number): IntroDemoState {
-  if (state.finished) return state;
-
-  let { simTimeSec, windDeg, windOscDeg, red, blue, redAtMarkSec, blueAtMarkSec } = state;
-  let finished: boolean = state.finished;
-
-  for (let i = 0; i < DEMO_TIME_SCALE && !finished; i += 1) {
-    simTimeSec += dt;
-    windOscDeg = demoWindOscDeg(simTimeSec);
-    windDeg = normalizeDeg(DEMO_BASE_WIND_DEG + windOscDeg);
-    const wind: LocalWind = { directionDeg: windDeg, speedKnots: DEMO_WIND_SPEED_KNOTS };
-
-    if (redAtMarkSec === undefined) {
-      red = stepDemoBoat(red, chooseMarkTack(red, windDeg, simTimeSec), wind, dt);
-      if (isAtMark(red.motion.position)) redAtMarkSec = simTimeSec;
-    }
-    if (blueAtMarkSec === undefined) {
-      blue = stepDemoBoat(blue, chooseMarkTack(blue, windDeg, simTimeSec), wind, dt);
-      if (isAtMark(blue.motion.position)) blueAtMarkSec = simTimeSec;
-    }
-    finished = redAtMarkSec !== undefined && blueAtMarkSec !== undefined;
-  }
-
-  return { ...state, simTimeSec, windDeg, windOscDeg, red, blue, redAtMarkSec, blueAtMarkSec, finished };
-}
-
-/** Sail for the mark, holding the chosen side off the line, with an arena guard. */
-function chooseMarkTack(boat: DemoBoat, windDeg: number, simTimeSec: number): Tack {
-  const guarded = chooseCornerTack(boat.motion.position.x, boat.tackHeld);
-  if (guarded !== boat.tackHeld) return guarded;
-  if (simTimeSec < SPLIT_HOLD_SEC) return boat.tackHeld;
-  return chooseAdaptiveTack({
-    position: boat.motion.position,
-    currentTack: boat.tackHeld,
-    windDeg,
-    mark: DEMO_MARK,
-    hysteresisDeg: TACK_HYSTERESIS_DEG
-  });
-}
-
-// ---------- zone demo (act 2) ----------
-
-export const ZONE_DEMO_ZONES: WindZoneState[] = [
-  {
-    id: "strong-lift",
-    bounds: { x: 1560, y: 420, width: 840, height: 980 },
-    speedDeltaKnots: 4,
-    shiftDeg: -12,
-    color: "#12a5e8",
-    alpha: 0.22,
-    phase: 0,
-    phaseSpeed: 0.6
-  },
-  {
-    id: "soft-patch",
-    bounds: { x: 400, y: 420, width: 840, height: 1080 },
-    speedDeltaKnots: -7,
-    shiftDeg: 12,
-    color: "#021a2c",
-    alpha: 0.42,
-    phase: 1.3,
-    phaseSpeed: 0.4
-  }
-];
-
-const ZONE_TIME_SCALE = 3;
-const RED_ROUTE: Vec2[] = [{ x: 1960, y: 880 }, DEMO_MARK];
-const BLUE_ROUTE: Vec2[] = [{ x: 740, y: 880 }, DEMO_MARK];
-
-export type ZoneDemoState = {
-  simTimeSec: number;
-  zones: WindZoneState[];
-  red: DemoBoat;
-  blue: DemoBoat;
-  redWaypoint: number;
-  blueWaypoint: number;
-  finished: boolean;
-};
-
-export function createZoneDemoState(): ZoneDemoState {
-  return {
-    simTimeSec: 0,
-    zones: ZONE_DEMO_ZONES.map((zone) => ({ ...zone })),
-    ...startingBoats(),
-    redWaypoint: 0,
-    blueWaypoint: 0,
-    finished: false
-  };
-}
-
-export function localWindAt(zones: WindZoneState[], position: Vec2): LocalWind {
-  const config: WindFieldConfig = {
-    baseDirectionDeg: DEMO_BASE_WIND_DEG,
-    baseSpeedKnots: DEMO_WIND_SPEED_KNOTS,
-    oscillation: { kind: "none" },
-    gusts: [],
-    zones
-  };
-  return getLocalWind(config, position, 0);
-}
-
-export function stepZoneDemo(state: ZoneDemoState, dt: number): ZoneDemoState {
-  if (state.finished) return state;
-
-  let { simTimeSec, red, blue, redWaypoint, blueWaypoint } = state;
-  let finished: boolean = state.finished;
-  const zones = state.zones.map((zone) => ({ ...zone, phase: zone.phase + zone.phaseSpeed * dt * ZONE_TIME_SCALE }));
-
-  for (let i = 0; i < ZONE_TIME_SCALE && !finished; i += 1) {
-    simTimeSec += dt;
-
-    [redWaypoint, red] = stepRoutedBoat(red, RED_ROUTE, redWaypoint, zones, dt);
-    [blueWaypoint, blue] = stepRoutedBoat(blue, BLUE_ROUTE, blueWaypoint, zones, dt);
-    finished = isAtMark(red.motion.position);
-  }
-
-  return { ...state, simTimeSec, zones, red, blue, redWaypoint, blueWaypoint, finished };
-}
-
-function stepRoutedBoat(
-  boat: DemoBoat,
-  route: Vec2[],
-  waypointIndex: number,
-  zones: WindZoneState[],
-  dt: number
-): [number, DemoBoat] {
-  const position = boat.motion.position;
-  let index = waypointIndex;
-  const waypoint = route[index];
-  if (index < route.length - 1 && Math.hypot(position.x - waypoint.x, position.y - waypoint.y) < WAYPOINT_RADIUS) {
-    index += 1;
-  }
-
-  const wind = localWindAt(zones, position);
-  const tack = chooseAdaptiveTack({
-    position,
-    currentTack: boat.tackHeld,
-    windDeg: wind.directionDeg,
-    mark: route[index],
-    hysteresisDeg: TACK_HYSTERESIS_DEG
-  });
-  return [index, stepDemoBoat(boat, tack, wind, dt)];
-}
-
-// ---------- shared helpers ----------
 
 export function stepDemoBoat(boat: DemoBoat, tack: Tack, wind: LocalWind, dt: number): DemoBoat {
-  const target = targetHeadingForTack(tack, wind.directionDeg);
+  const tackChanges = boat.tackChanges + (tack !== boat.tackHeld ? 1 : 0);
+  const target = tackChanges > 0 ? bearingDeg(boat.motion.position, DEMO_MARK) : targetHeadingForTack(tack, wind.directionDeg);
   const rudder = clamp(signedDelta(boat.motion.headingDeg, target) * STEER_GAIN, -1, 1);
   const motion = stepBoatPhysics({
     motion: boat.motion,
@@ -297,19 +299,28 @@ export function stepDemoBoat(boat: DemoBoat, tack: Tack, wind: LocalWind, dt: nu
     penaltyFactor: 1,
     dt
   });
+  return { motion, track: appendTrack(boat.track, motion.position), tackHeld: tack, tackChanges };
+}
 
-  let track = boat.track;
+function appendTrack(track: Vec2[], position: Vec2): Vec2[] {
   const last = track[track.length - 1];
-  if (!last || Math.hypot(motion.position.x - last.x, motion.position.y - last.y) > TRACK_SPACING) {
-    track = [...track, { ...motion.position }];
-    if (track.length > TRACK_LIMIT) track = track.slice(track.length - TRACK_LIMIT);
-  }
-
-  return { motion, track, tackHeld: tack };
+  if (last && Math.hypot(position.x - last.x, position.y - last.y) <= TRACK_SPACING) return track;
+  const next = [...track, { ...position }];
+  return next.length > TRACK_LIMIT ? next.slice(next.length - TRACK_LIMIT) : next;
 }
 
 function isAtMark(position: Vec2): boolean {
   return Math.hypot(position.x - DEMO_MARK.x, position.y - DEMO_MARK.y) < FINISH_RADIUS;
+}
+
+function finishAtMark(boat: DemoBoat): DemoBoat {
+  const motion = {
+    ...boat.motion,
+    position: { ...DEMO_MARK },
+    velocity: { x: 0, y: 0 },
+    speed: 0
+  };
+  return { ...boat, motion, track: appendTrack(boat.track, DEMO_MARK) };
 }
 
 function bearingDeg(from: Vec2, to: Vec2): number {

@@ -36,28 +36,35 @@ function makeBoat(overrides: Partial<BoatState> = {}): BoatState {
 }
 
 describe("start legality", () => {
-  it("flags a boat as OCS if it is on the course side at the starting signal", () => {
-    const boat = makeBoat({ position: { x: midX, y: lineY - 40 } });
+  it("flags a boat as OCS if its bow is on the course side at the starting signal", () => {
+    const boat = makeBoat({ position: { x: midX, y: lineY + 30 }, headingDeg: 0 });
     const result = updateBoatRace({ boat, prevPosition: boat.position, course, elapsedMs: 0, startSignal: true });
     expect(result.boat.startStatus).toBe("ocs");
     expect(result.events.some((e) => e.kind === "ocs")).toBe(true);
   });
 
-  it("starts a boat that crosses the line from the pre-start side after the signal", () => {
-    const boat = makeBoat({ position: { x: midX, y: lineY - 5 } });
-    const result = updateBoatRace({ boat, prevPosition: { x: midX, y: lineY + 5 }, course, elapsedMs: 1000, startSignal: false });
+  it("starts a boat when its bow crosses the line from the pre-start side after the signal", () => {
+    const boat = makeBoat({ position: { x: midX, y: lineY + 40 }, headingDeg: 0 });
+    const result = updateBoatRace({ boat, prevPosition: { x: midX, y: lineY + 60 }, course, elapsedMs: 1000, startSignal: false });
     expect(result.boat.startStatus).toBe("started");
     expect(result.events.some((e) => e.kind === "start")).toBe(true);
   });
 
+  it("does not wait for the boat center to cross the start line", () => {
+    const boat = makeBoat({ position: { x: midX, y: lineY + 40 }, headingDeg: 0 });
+    const result = updateBoatRace({ boat, prevPosition: { x: midX, y: lineY + 60 }, course, elapsedMs: 1000, startSignal: false });
+    expect(boat.position.y).toBeGreaterThan(lineY);
+    expect(result.boat.startStatus).toBe("started");
+  });
+
   it("clears OCS only after the boat returns fully to the pre-start side", () => {
-    const ocsBoat = makeBoat({ startStatus: "ocs", position: { x: midX, y: lineY + 30 } });
+    const ocsBoat = makeBoat({ startStatus: "ocs", position: { x: midX, y: lineY + 80 }, headingDeg: 0 });
     const back = updateBoatRace({ boat: ocsBoat, prevPosition: { x: midX, y: lineY - 10 }, course, elapsedMs: 2000, startSignal: false });
     expect(back.boat.startStatus).toBe("prestart");
 
     const restart = updateBoatRace({
       boat: back.boat,
-      prevPosition: { x: midX, y: lineY + 30 },
+      prevPosition: { x: midX, y: lineY + 80 },
       course,
       elapsedMs: 3000,
       startSignal: false

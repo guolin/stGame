@@ -29,7 +29,7 @@ export type RaceEnvironment = {
 };
 
 const DIFFICULTY_WIND_KNOTS: Record<DifficultyId, number> = { easy: 8, standard: 12, race: 16 };
-const DIFFICULTY_COUNTDOWN_MS: Record<DifficultyId, number> = { easy: 20_000, standard: 30_000, race: 30_000 };
+const DIFFICULTY_COUNTDOWN_MS: Record<DifficultyId, number> = { easy: 20_000, standard: 20_000, race: 20_000 };
 
 const NINE_ZONE_DELTAS = [
   { speedDeltaKnots: 1.4, shiftDeg: -8 },
