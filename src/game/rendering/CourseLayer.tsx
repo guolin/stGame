@@ -78,6 +78,20 @@ export function CourseLayer({ course }: CourseLayerProps) {
           style={{ fill: THEME.course.legLabelColor, fontFamily: THEME.text.fontFamily, fontSize: THEME.course.legLabelFontSize, fontWeight: "700" }}
         />
       ))}
+      {!sameLine(course.finishLine, course.startLine) && (
+        <pixiText
+          text="终点线"
+          x={(course.finishLine.left.x + course.finishLine.right.x) / 2}
+          y={(course.finishLine.left.y + course.finishLine.right.y) / 2 + 34}
+          anchor={0.5}
+          style={{
+            fill: THEME.course.finishLineColor,
+            fontFamily: THEME.text.fontFamily,
+            fontSize: THEME.course.legLabelFontSize,
+            fontWeight: "700"
+          }}
+        />
+      )}
     </pixiContainer>
   );
 }

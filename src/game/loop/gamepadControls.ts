@@ -3,7 +3,6 @@ import { useGameStore } from "../../store/gameStore";
 import type { BoatId } from "../types";
 
 const BOAT_ORDER: BoatId[] = ["red", "green", "yellow", "blue"];
-const STEERING_AXIS = 0;
 const AXIS_DEADZONE = 0.02;
 const GAMEPAD_STEERING_SENSITIVITY = 2.6;
 const DIGITAL_RUDDER_RATE_PER_SEC = 7;
@@ -26,6 +25,13 @@ const DIGITAL_RUDDER_BUTTONS: Record<number, { left: number; right: number }> = 
   3: { left: 8, right: 9 }
 };
 
+export type RudderGamepad = {
+  axes: readonly number[];
+  buttons: readonly { pressed: boolean }[];
+  connected: boolean;
+  id?: string;
+};
+
 /** Pure so it can be unit-tested without a real Gamepad object. */
 export function resolveDigitalRudderOverride(
   pad: { buttons: readonly { pressed: boolean }[] } | undefined,
@@ -36,6 +42,28 @@ export function resolveDigitalRudderOverride(
   const left = Boolean(pad.buttons[mapping.left]?.pressed);
   const right = Boolean(pad.buttons[mapping.right]?.pressed);
   return (left ? 1 : 0) - (right ? 1 : 0);
+}
+
+export function resolveControllerPad(
+  pads: readonly RudderGamepad[],
+  channel: number,
+  activeBoatCount: number
+): { pad: RudderGamepad | undefined; localChannel: number } {
+  if (pads.length >= activeBoatCount) return { pad: pads[channel], localChannel: 0 };
+
+  const advIndex = Math.floor(channel / 2);
+  const localChannel = channel % 2;
+  return pads[advIndex] ? { pad: pads[advIndex], localChannel } : { pad: pads[0], localChannel: channel };
+}
+
+export function resolveAnalogRudder(
+  pads: readonly RudderGamepad[],
+  channel: number,
+  activeBoatCount: number
+) {
+  const { pad, localChannel } = resolveControllerPad(pads, channel, activeBoatCount);
+  const axisValue = pad?.axes[localChannel] ?? pads[0]?.axes[channel];
+  return gamepadAxisToRudder(axisValue);
 }
 
 export function stepDigitalRudder(current: number, direction: number, dt: number): number {
@@ -65,9 +93,9 @@ export function useGamepadControls() {
 
       activeBoatIds.forEach((boatId, index) => {
         const channel = BOAT_ORDER.indexOf(boatId);
-        const gamepad = connected[index];
-        const digital = resolveDigitalRudderOverride(connected[0], channel);
-        const analog = gamepadAxisToRudder(gamepad?.axes[STEERING_AXIS] ?? connected[0]?.axes[channel]);
+        const { pad, localChannel } = resolveControllerPad(connected, channel, activeBoatIds.length);
+        const digital = resolveDigitalRudderOverride(pad ?? connected[0], localChannel);
+        const analog = resolveAnalogRudder(connected, channel, activeBoatIds.length);
         const nextDigitalRudder = stepDigitalRudder(digitalRudderRef.current[boatId], digital, dt);
         digitalRudderRef.current = { ...digitalRudderRef.current, [boatId]: nextDigitalRudder };
         const rudder = Math.abs(nextDigitalRudder) > 0 ? nextDigitalRudder : analog;
