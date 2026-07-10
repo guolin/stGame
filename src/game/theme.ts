@@ -43,13 +43,6 @@ export const THEME = {
     strokeAlpha: 0.4,
     strokeWidth: 3
   },
-  current: {
-    zoneFillColor: "#2ea8ff",
-    zoneFillAlpha: 0.07,
-    arrowColor: "#49c9ff",
-    arrowAlpha: 0.42,
-    arrowWidth: 7
-  },
   boat: {
     hullFillColor: "#f6fbff",
     hullStrokeWidth: 8,

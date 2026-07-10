@@ -294,7 +294,6 @@ export function stepDemoBoat(boat: DemoBoat, tack: Tack, wind: LocalWind, dt: nu
     rudder,
     boatType: "op",
     wind,
-    current: { x: 0, y: 0 },
     penaltyFactor: 1,
     dt
   });

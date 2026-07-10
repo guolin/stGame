@@ -30,7 +30,7 @@ export function RaceSetupDialog({ onClose }: RaceSetupDialogProps) {
       <section className="race-setup-modal" role="dialog" aria-modal="true" aria-labelledby="race-setup-title">
         <p className="eyebrow">比赛设置</p>
         <h2 id="race-setup-title">开始一场比赛</h2>
-        <p className="modal-copy">默认开启风摆、真风和自动裁判；水流关闭。</p>
+        <p className="modal-copy">默认开启风摆、真风和自动裁判。</p>
 
         <div className="setup-grid compact">
           <div className="setup-block">

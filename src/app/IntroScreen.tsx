@@ -127,7 +127,7 @@ const DEMO_COURSE: CourseDefinition = (() => {
   };
 })();
 
-const DEMO_OVERLAYS: OverlaySettings = { wind: false, current: false, tracks: true, laylines: false, noGoZone: false };
+const DEMO_OVERLAYS: OverlaySettings = { wind: false, tracks: true, laylines: false, noGoZone: false };
 
 type LiveBoat = { motion: BoatMotionState; track: { x: number; y: number }[] };
 
@@ -177,7 +177,6 @@ export function IntroScreen() {
         rudder: liveRudderRef.current,
         boatType: "op",
         wind: { directionDeg: liveWindDeg(liveTimeRef.current), speedKnots: DEMO_WIND_SPEED_KNOTS },
-        current: { x: 0, y: 0 },
         penaltyFactor: 1,
         dt
       });

@@ -4,7 +4,6 @@ import { useGameStore } from "../../store/gameStore";
 import { WORLD } from "../constants";
 import { BoatSprite } from "./BoatSprite";
 import { CourseLayer } from "./CourseLayer";
-import { CurrentLayer } from "./CurrentLayer";
 import { GustLayer } from "./GustLayer";
 import { TacticalOverlayLayer } from "./TacticalOverlayLayer";
 import { WaterLayer } from "./WaterLayer";
@@ -18,7 +17,6 @@ export function GameStage() {
   const activeBoatIds = useGameStore((state) => state.activeBoatIds);
   const windField = useGameStore((state) => state.windField);
   const elapsedMs = useGameStore((state) => state.race.elapsedMs);
-  const currents = useGameStore((state) => state.currents);
   const overlays = useGameStore((state) => state.overlays);
   const wind = useGameStore((state) => state.wind);
   const activeBoats = boats.filter((boat) => activeBoatIds.includes(boat.id));
@@ -35,7 +33,6 @@ export function GameStage() {
       <pixiContainer>
         <WaterLayer timeSec={elapsedMs / 1000} />
         <GustLayer windField={windField} timeSec={elapsedMs / 1000} visible={overlays.wind} />
-        <CurrentLayer currents={currents} visible={overlays.current} />
         <WindLayer windField={windField} timeSec={elapsedMs / 1000} visible={overlays.wind} />
         <CourseLayer course={course} />
         <TacticalOverlayLayer boats={activeBoats} overlays={overlays} wind={wind} course={course} />

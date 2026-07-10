@@ -7,7 +7,7 @@ export function LessonMenuScreen() {
   const lessons = [
     {
       title: "船只运行逻辑",
-      blurb: "风角实验台：拖动舵杆，看极曲线上的光点实时移动，体验禁航角和水流",
+      blurb: "风角实验台：拖动舵杆，看极曲线上的光点实时移动，体验禁航角",
       view: "lessonBoat" as const
     },
     {

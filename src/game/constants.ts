@@ -1,4 +1,4 @@
-import type { BoatState, CurrentZone, OverlaySettings, RaceState, WindState, WindZoneState } from "./types";
+import type { BoatState, OverlaySettings, RaceState, WindState, WindZoneState } from "./types";
 import type { WindFieldConfig } from "../sim/wind/windField";
 import { PIXELS_PER_KNOT } from "../sim/boat/units";
 
@@ -26,7 +26,6 @@ const INITIAL_BOAT_SPEED = 3.2 * PIXELS_PER_KNOT;
 
 export const INITIAL_OVERLAYS: OverlaySettings = {
   wind: true,
-  current: true,
   tracks: true,
   laylines: true,
   noGoZone: true
@@ -168,12 +167,6 @@ export const INITIAL_WIND_ZONES: WindZoneState[] = [
     phase: 0.7,
     phaseSpeed: 0.1
   }
-];
-
-export const INITIAL_CURRENTS: CurrentZone[] = [
-  { id: "left-river", center: { x: 650, y: 960 }, radius: 430, vector: { x: 11, y: -3 } },
-  { id: "right-counter", center: { x: 2200, y: 1050 }, radius: 510, vector: { x: -9, y: 6 } },
-  { id: "mark-current", center: { x: 1500, y: 410 }, radius: 360, vector: { x: 5, y: 8 } }
 ];
 
 export const INITIAL_WIND_FIELD: WindFieldConfig = {

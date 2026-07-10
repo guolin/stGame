@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { CoachControls } from "../components/hud/CoachControls";
 import { Countdown } from "../components/hud/Countdown";
-import { CurrentPanel } from "../components/hud/CurrentPanel";
 import { PlayerPanel } from "../components/hud/PlayerPanel";
 import { RuleEventLog } from "../components/hud/RuleEventLog";
 import { WindPanel } from "../components/hud/WindPanel";
@@ -25,7 +24,6 @@ export function GameScreen() {
       <div className="hud">
         <Countdown />
         <WindPanel />
-        <CurrentPanel />
         {activeBoatIds.map((boatId) => (
           <PlayerPanel key={boatId} boatId={boatId} />
         ))}

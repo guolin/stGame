@@ -11,7 +11,6 @@ function makeInput(overrides: Partial<BoatPhysicsInput> = {}): BoatPhysicsInput 
     rudder: 0,
     boatType: "op",
     wind: calmWind,
-    current: { x: 0, y: 0 },
     penaltyFactor: 1,
     dt: 1 / 60,
     ...overrides
@@ -121,17 +120,6 @@ describe("tacking", () => {
     expect(tackedMotion.tack).toBe("port");
     expect(tackedMotion.tackTimerSec).toBeGreaterThan(0);
     expect(tackedMotion.speed).toBeLessThan(settledSpeed);
-  });
-});
-
-describe("current and STW/SOG", () => {
-  it("keeps STW unchanged by current while SOG drifts with it", () => {
-    const noCurrent = run(makeInput(), 10);
-    const withCurrent = run(makeInput({ current: { x: 10, y: 0 } }), 10);
-
-    expect(withCurrent.speed).toBeCloseTo(noCurrent.speed, 1);
-    expect(withCurrent.velocity.x - noCurrent.velocity.x).toBeCloseTo(10, 1);
-    expect(withCurrent.position.x).toBeGreaterThan(noCurrent.position.x + 50);
   });
 });
 

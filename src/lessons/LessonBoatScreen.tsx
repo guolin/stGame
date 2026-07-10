@@ -19,7 +19,6 @@ import { FocusableButton } from "../app/navigation/FocusableButton";
 
 const WIND_DIRECTION_DEG = 0;
 const DEFAULT_WIND_SPEED_KNOTS = 12;
-const CURRENT: Vec2 = { x: 16, y: 4 };
 const PLAYER_SPAWN = { position: { x: 1000, y: 1500 }, headingDeg: 50 };
 const GHOST_SPAWN = { position: { x: 1800, y: 1500 }, headingDeg: 310 };
 const FINISH_Y = 320;
@@ -38,11 +37,8 @@ export function LessonBoatScreen() {
 
   const [frame, setFrame] = useState(0);
   const [windSpeed, setWindSpeed] = useState(DEFAULT_WIND_SPEED_KNOTS);
-  const [currentOn, setCurrentOn] = useState(false);
   const [raceResult, setRaceResult] = useState<RaceResult>(undefined);
   windSpeedRef.current = windSpeed;
-  const currentOnRef = useRef(currentOn);
-  currentOnRef.current = currentOn;
   const raceResultRef = useRef(raceResult);
   raceResultRef.current = raceResult;
 
@@ -64,7 +60,6 @@ export function LessonBoatScreen() {
   }, []);
 
   useFixedStepLoop(() => {
-    const current = currentOnRef.current ? CURRENT : { x: 0, y: 0 };
     const wind = { directionDeg: WIND_DIRECTION_DEG, speedKnots: windSpeedRef.current };
 
     // --- player boat ---
@@ -75,7 +70,6 @@ export function LessonBoatScreen() {
         rudder: keyRudder,
         boatType: "op",
         wind,
-        current,
         penaltyFactor: 1,
         dt: 1 / 60
       })
@@ -101,7 +95,6 @@ export function LessonBoatScreen() {
           rudder: clamp(delta * 0.06, -1, 1),
           boatType: "op",
           wind,
-          current,
           penaltyFactor: 1,
           dt: 1 / 60
         })
@@ -250,10 +243,6 @@ export function LessonBoatScreen() {
           </div>
 
           <div className="lesson-actions">
-            <label className="lesson-toggle">
-              <input type="checkbox" checked={currentOn} onChange={() => setCurrentOn((v) => !v)} />
-              打开水流（看航迹被推歪，STW 不变、SOG 变）
-            </label>
             <FocusableButton type="button" className="accent" onClick={startGhostRace}>
               和幽灵船比赛到上方绿线
             </FocusableButton>
