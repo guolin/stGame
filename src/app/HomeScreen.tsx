@@ -18,14 +18,28 @@ export function HomeScreen() {
   const [setupOpen, setSetupOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [gamepadOpen, setGamepadOpen] = useState(false);
+  const [restoreSetupFocus, setRestoreSetupFocus] = useState(false);
   const [restoreAboutFocus, setRestoreAboutFocus] = useState(false);
   const setView = useGameStore((state) => state.setView);
 
   useEffect(() => {
-    if (!restoreAboutFocus) return;
-    const timer = window.setTimeout(() => setRestoreAboutFocus(false), 0);
+    if (!restoreSetupFocus && !restoreAboutFocus) return;
+    const timer = window.setTimeout(() => {
+      setRestoreSetupFocus(false);
+      setRestoreAboutFocus(false);
+    }, 0);
     return () => window.clearTimeout(timer);
-  }, [restoreAboutFocus]);
+  }, [restoreSetupFocus, restoreAboutFocus]);
+
+  const openSetup = () => {
+    setRestoreSetupFocus(false);
+    setSetupOpen(true);
+  };
+
+  const closeSetup = () => {
+    setSetupOpen(false);
+    setRestoreSetupFocus(true);
+  };
 
   const openAbout = () => {
     setRestoreAboutFocus(false);
@@ -46,7 +60,7 @@ export function HomeScreen() {
           <h1>把风、航线和规则变成一场大屏比赛</h1>
           <p>用实体小船手柄控制屏幕里的帆船。读风、抢线、避让，系统实时记录犯规和比赛结果。</p>
           <div className="home-primary-actions">
-            <FocusableButton type="button" className="primary" onClick={() => setSetupOpen(true)} autoFocus>
+            <FocusableButton type="button" className="primary" onClick={openSetup} autoFocus={!setupOpen && !aboutOpen && !gamepadOpen && !restoreAboutFocus}>
               开始游戏
             </FocusableButton>
           </div>
@@ -71,7 +85,7 @@ export function HomeScreen() {
           项目介绍
         </FocusableButton>
       </footer>
-      {setupOpen ? <RaceSetupDialog onClose={() => setSetupOpen(false)} /> : null}
+      {setupOpen ? <RaceSetupDialog onClose={closeSetup} /> : null}
       {gamepadOpen ? <GamepadTestDialog onClose={() => setGamepadOpen(false)} /> : null}
       {aboutOpen ? (
         <div className="modal-scrim" role="presentation">
