@@ -131,23 +131,6 @@ function CourseMiniMap({ courseId }: { courseId: (typeof COURSE_IDS)[number] }) 
   const def = useMemo(() => getCourse(courseId), [courseId]);
   const scale = 120 / 2800;
   const offsetY = (120 - 1800 * scale) / 2;
-  const startCenter = {
-    x: ((def.startLine.left.x + def.startLine.right.x) / 2) * scale,
-    y: ((def.startLine.left.y + def.startLine.right.y) / 2) * scale + offsetY
-  };
-  const finishCenter = {
-    x: ((def.finishLine.left.x + def.finishLine.right.x) / 2) * scale,
-    y: ((def.finishLine.left.y + def.finishLine.right.y) / 2) * scale + offsetY
-  };
-  const routePoints = [
-    startCenter,
-    ...def.legMarkIds.map((markId) => {
-      const mark = def.marks.find((item) => item.id === markId)!;
-      return { x: mark.position.x * scale, y: mark.position.y * scale + offsetY };
-    }),
-    finishCenter
-  ];
-  const routePath = routePoints.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
   const hasSeparateFinish =
     def.finishLine.left.x !== def.startLine.left.x ||
     def.finishLine.left.y !== def.startLine.left.y ||
@@ -156,7 +139,6 @@ function CourseMiniMap({ courseId }: { courseId: (typeof COURSE_IDS)[number] }) 
 
   return (
     <svg className="mini-map" viewBox="0 0 120 120" aria-hidden>
-      <path d={routePath} fill="none" stroke="#fff0a8" strokeWidth="1.5" opacity="0.65" />
       <line
         x1={def.startLine.left.x * scale}
         y1={def.startLine.left.y * scale + offsetY}
