@@ -89,7 +89,7 @@ describe("start legality", () => {
 });
 
 describe("mark rounding direction", () => {
-  const mark = course.marks[0]; // starboard rounding
+  const mark = course.marks[0]; // port rounding
 
   function roundMark(path: { x: number; y: number }[], startLegIndex = 0) {
     let boat = makeBoat({ startStatus: "started", legIndex: startLegIndex, position: path[0] });
@@ -111,30 +111,30 @@ describe("mark rounding direction", () => {
   }
 
   it("advances the leg when the boat rounds the mark on the required side", () => {
-    // Starboard rounding: leave the mark to starboard -> pass on its left (west), sweeping clockwise.
+    // Port rounding: leave the mark to port -> pass on its right (east), sweeping counterclockwise.
     const m = mark.position;
     const path = [
       { x: m.x, y: m.y + 130 },
-      { x: m.x - 95, y: m.y + 95 },
-      { x: m.x - 130, y: m.y },
-      { x: m.x - 95, y: m.y - 95 },
-      { x: m.x, y: m.y - 130 },
+      { x: m.x + 95, y: m.y + 95 },
+      { x: m.x + 130, y: m.y },
       { x: m.x + 95, y: m.y - 95 },
-      { x: m.x + 200, y: m.y - 60 },
-      { x: m.x + 400, y: m.y + 100 }
+      { x: m.x, y: m.y - 130 },
+      { x: m.x - 95, y: m.y - 95 },
+      { x: m.x - 200, y: m.y - 60 },
+      { x: m.x - 400, y: m.y + 100 }
     ];
     const { boat, events } = roundMark(path);
     expect(boat.legIndex).toBe(1);
     expect(events.some((e) => e.kind === "mark")).toBe(true);
   });
 
-  it("does not count a pass that never exits to the right side of the mark", () => {
+  it("does not count a pass that never exits to the left side of the mark", () => {
     const m = mark.position;
     const path = [
       { x: m.x, y: m.y + 150 },
-      { x: m.x - 80, y: m.y + 100 },
-      { x: m.x - 130, y: m.y },
-      { x: m.x - 190, y: m.y }
+      { x: m.x + 80, y: m.y + 100 },
+      { x: m.x + 130, y: m.y },
+      { x: m.x + 190, y: m.y }
     ];
     const { boat, events } = roundMark(path);
     expect(boat.legIndex).toBe(0);
@@ -161,9 +161,9 @@ describe("mark rounding direction", () => {
     const m = mark.position;
     const { boat, events } = roundMark([
       { x: m.x, y: m.y + 150 },
-      { x: m.x - 48, y: m.y + 20 },
-      { x: m.x - 120, y: m.y - 90 },
-      { x: m.x - 220, y: m.y - 120 }
+      { x: m.x + 48, y: m.y + 20 },
+      { x: m.x + 120, y: m.y - 90 },
+      { x: m.x + 220, y: m.y - 120 }
     ]);
 
     expect(boat.penaltyCount).toBe(0);
@@ -174,12 +174,12 @@ describe("mark rounding direction", () => {
     const m = mark.position;
     const path = [
       { x: m.x, y: m.y + 130 },
-      { x: m.x + 95, y: m.y + 95 },
-      { x: m.x + 130, y: m.y },
-      { x: m.x + 95, y: m.y - 95 },
+      { x: m.x - 95, y: m.y + 95 },
+      { x: m.x - 130, y: m.y },
+      { x: m.x - 95, y: m.y - 95 },
       { x: m.x, y: m.y - 130 },
-      { x: m.x - 200, y: m.y - 200 },
-      { x: m.x - 400, y: m.y - 400 }
+      { x: m.x + 200, y: m.y - 200 },
+      { x: m.x + 400, y: m.y - 400 }
     ];
     const { boat } = roundMark(path);
     expect(boat.legIndex).toBe(0);

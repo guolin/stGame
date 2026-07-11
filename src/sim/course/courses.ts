@@ -32,6 +32,7 @@ function triangleSpawns(): SpawnPoint[] {
   ];
 }
 
+// 本项目所有赛道一律左舷绕标（rounding: "port"），不要改成右舷。
 const COURSES: Record<CourseId, CourseDefinition> = {
   simple: {
     id: "simple",
@@ -39,7 +40,7 @@ const COURSES: Record<CourseId, CourseDefinition> = {
     description: "起点/终点 -> 1标 -> 起点/终点",
     startLine: START_LINE,
     finishLine: START_LINE,
-    marks: [{ id: "m1", label: "1标", position: { x: 1400, y: 260 }, rounding: "starboard" }],
+    marks: [{ id: "m1", label: "1标", position: { x: 1400, y: 260 }, rounding: "port" }],
     legMarkIds: ["m1"],
     spawnPoints: defaultSpawns(),
     recommendedPlayers: { min: 1, max: 2 }
@@ -51,8 +52,8 @@ const COURSES: Record<CourseId, CourseDefinition> = {
     startLine: START_LINE,
     finishLine: START_LINE,
     marks: [
-      { id: "m1", label: "1标", position: { x: 1400, y: 250 }, rounding: "starboard" },
-      { id: "m4", label: "4标", position: { x: 1400, y: 1645 }, rounding: "starboard" }
+      { id: "m1", label: "1标", position: { x: 1400, y: 250 }, rounding: "port" },
+      { id: "m4", label: "4标", position: { x: 1400, y: 1645 }, rounding: "port" }
     ],
     legMarkIds: ["m1", "m4", "m1"],
     spawnPoints: defaultSpawns(),
@@ -65,9 +66,9 @@ const COURSES: Record<CourseId, CourseDefinition> = {
     startLine: TRIANGLE_START_LINE,
     finishLine: TRIANGLE_START_LINE,
     marks: [
-      { id: "m1", label: "1标", position: { x: 1860, y: 266 }, rounding: "starboard" },
-      { id: "m2", label: "2标", position: { x: 933, y: 430 }, rounding: "starboard" },
-      { id: "m3", label: "3标", position: { x: 933, y: 1360 }, rounding: "starboard" }
+      { id: "m1", label: "1标", position: { x: 1860, y: 266 }, rounding: "port" },
+      { id: "m2", label: "2标", position: { x: 933, y: 430 }, rounding: "port" },
+      { id: "m3", label: "3标", position: { x: 933, y: 1360 }, rounding: "port" }
     ],
     legMarkIds: ["m1", "m2", "m3", "m2", "m3"],
     spawnPoints: triangleSpawns(),
