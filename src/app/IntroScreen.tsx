@@ -385,7 +385,7 @@ export function IntroScreen() {
                 风摆 {oscRounded >= 0 ? "+" : ""}
                 {oscRounded}°
               </div>
-              {duel.autopilot && <div className="hud-chip hud-chip-accent">自动舵</div>}
+              {duel.autopilot && <div className="autopilot-dot" aria-label="自动舵已开启" title="自动舵已开启" />}
               {duel.redAtMarkSec !== undefined && duel.blueAtMarkSec === undefined && (
                 <div className="hud-chip hud-chip-finish">你先到 1 标！</div>
               )}

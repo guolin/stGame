@@ -73,6 +73,13 @@ describe("start legality", () => {
     expect(restart.boat.startStatus).toBe("prestart");
   });
 
+  it("keeps OCS while only the bow has returned to the pre-start side", () => {
+    const ocsBoat = makeBoat({ startStatus: "ocs", position: { x: midX, y: lineY - 20 }, headingDeg: 180 });
+    const result = updateBoatRace({ boat: ocsBoat, prevPosition: { x: midX, y: lineY - 80 }, course, elapsedMs: 2000, startSignal: false });
+    expect(result.boat.startStatus).toBe("ocs");
+    expect(result.events.some((e) => e.kind === "ocs-cleared")).toBe(false);
+  });
+
   it("does not advance legs before a legal start", () => {
     const mark = course.marks[0];
     const boat = makeBoat({ startStatus: "ocs", position: { ...mark.position } });

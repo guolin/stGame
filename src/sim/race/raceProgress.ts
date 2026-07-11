@@ -23,6 +23,8 @@ const MARK_TOUCH_RADIUS = 23;
 /** Minimal bearing sweep that proves the boat passed the mark on the required side. */
 const ROUNDING_PASS_SWEEP_DEG = 45;
 const BOW_OFFSET_PX = 48;
+const STERN_OFFSET_PX = 54;
+const HULL_HALF_WIDTH_PX = 24;
 const MARK_TOUCH_PENALTY_MS = 3000;
 
 export function updateBoatRace({ boat, prevPosition, course, elapsedMs, startSignal }: RaceProgressInput): RaceProgressResult {
@@ -42,7 +44,7 @@ export function updateBoatRace({ boat, prevPosition, course, elapsedMs, startSig
   }
 
   if (next.startStatus === "ocs") {
-    if (!isOnCourseSide(bow, course.startLine)) {
+    if (isEntireHullOnPrestartSide(next, course.startLine)) {
       next = { ...next, startStatus: "prestart" };
       emit("ocs-cleared", `${boat.name} 已回到起航线后，可以重新起航`);
     }
@@ -134,6 +136,27 @@ function bowPosition(boat: BoatState, position = boat.position): Vec2 {
     x: position.x + forward.x * BOW_OFFSET_PX,
     y: position.y + forward.y * BOW_OFFSET_PX
   };
+}
+
+function hullPoints(boat: BoatState): Vec2[] {
+  const forward = headingToVector(boat.headingDeg);
+  const rad = (boat.headingDeg * Math.PI) / 180;
+  const right = { x: Math.cos(rad), y: Math.sin(rad) };
+  const localPoints = [
+    { x: 0, y: -BOW_OFFSET_PX },
+    { x: HULL_HALF_WIDTH_PX, y: 38 },
+    { x: 0, y: STERN_OFFSET_PX },
+    { x: -HULL_HALF_WIDTH_PX, y: 38 }
+  ];
+
+  return localPoints.map((point) => ({
+    x: boat.position.x + right.x * point.x - forward.x * point.y,
+    y: boat.position.y + right.y * point.x - forward.y * point.y
+  }));
+}
+
+function isEntireHullOnPrestartSide(boat: BoatState, line: LineSegment): boolean {
+  return hullPoints(boat).every((point) => !isOnCourseSide(point, line));
 }
 
 function sideOfMark(position: Vec2, mark: Vec2): "left" | "right" {
