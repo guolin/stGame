@@ -2165,6 +2165,7 @@ input {
   max-width: 900px;
   font-size: 76px;
   line-height: 1.06;
+  white-space: pre-line;
 }
 
 .intro-body {
@@ -2466,6 +2467,43 @@ video.intro-comic {
   border: 1px solid rgba(159, 210, 232, 0.5);
   border-bottom-right-radius: 4px;
   margin-left: 46px;
+}
+
+/* 自动舵暗号点：演讲者自己的提示，观众几乎注意不到 */
+.autopilot-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ffe082;
+  align-self: center;
+  flex: none;
+}
+
+.summary-chips {
+  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.summary-chips span {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 10px 22px;
+  border: 1px solid rgba(216, 245, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(4, 22, 36, 0.72);
+  color: #dff8ff;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.summary-chips .feature-icon {
+  width: 28px;
+  height: 28px;
+  flex: none;
 }
 
 .feature-row {

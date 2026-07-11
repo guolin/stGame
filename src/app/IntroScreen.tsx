@@ -58,12 +58,12 @@ const SLIDES: Slide[] = [
   {
     kind: "dark",
     corner: "谁先到 1 标谁赢",
-    line: "红船、蓝船：同样的船，同样的速度。"
+    line: "红船、蓝船：同样的船，同样的速度——这是一张没有路况的地图。"
   },
   {
     kind: "replay",
-    corner: "同一场比赛，把风画出来",
-    line: "一帧都没改——只是把看不见的东西画了出来。"
+    corner: "同一场比赛，打开路况图层",
+    line: "一帧都没改——只是把看不见的风，画成了路况。"
   },
   {
     kind: "duel",
@@ -72,28 +72,25 @@ const SLIDES: Slide[] = [
   },
   {
     kind: "text",
-    title: "我们把训练拆开了",
+    title: "说得再多，\n不如真打一场",
     body: [],
     extra: (
       <>
-        <div className="feature-row">
-          <div className="feature">
+        <div className="summary-chips">
+          <span>
             <EyeIcon />
-            <h3>看见风</h3>
-            <p>风向、风力、风摆，全画在屏幕上，一眼就懂。</p>
-          </div>
-          <div className="feature">
+            看见风
+          </span>
+          <span>
             <TillerIcon />
-            <h3>控制船</h3>
-            <p>手里的舵柄一转，屏幕里的船就跟着转，跟海上一个感觉。</p>
-          </div>
-          <div className="feature">
+            控制船
+          </span>
+          <span>
             <CheckIcon />
-            <h3>立刻知道对不对</h3>
-            <p>航迹、等高线、到标时间差，每个决定当场见分晓。</p>
-          </div>
+            立刻知道对不对
+          </span>
         </div>
-        <p className="intro-note">接下来：绕标 · 起航 · 多人对战</p>
+        <p className="intro-note">接下来：拿起手柄，下场比赛</p>
       </>
     )
   },
@@ -377,7 +374,7 @@ export function IntroScreen() {
                 风摆 {oscRounded >= 0 ? "+" : ""}
                 {oscRounded}°
               </div>
-              {duel.autopilot && <div className="hud-chip hud-chip-accent">自动舵</div>}
+              {duel.autopilot && <span className="autopilot-dot" aria-label="自动舵" />}
               {duel.redAtMarkSec !== undefined && duel.blueAtMarkSec === undefined && (
                 <div className="hud-chip hud-chip-finish">你先到 1 标！</div>
               )}
