@@ -121,7 +121,7 @@ describe("mark rounding direction", () => {
     expect(events.some((e) => e.kind === "mark")).toBe(true);
   });
 
-  it("counts a normal pass on the required side without requiring a full 90 degree arc", () => {
+  it("does not count a pass that never exits to the left side of the mark", () => {
     const m = mark.position;
     const path = [
       { x: m.x, y: m.y + 150 },
@@ -130,8 +130,37 @@ describe("mark rounding direction", () => {
       { x: m.x + 190, y: m.y }
     ];
     const { boat, events } = roundMark(path);
-    expect(boat.legIndex).toBe(1);
-    expect(events.some((e) => e.kind === "mark")).toBe(true);
+    expect(boat.legIndex).toBe(0);
+    expect(events.some((e) => e.kind === "mark")).toBe(false);
+  });
+
+  it("does not advance and penalizes the boat when it hits the mark", () => {
+    const m = mark.position;
+    const { boat, events } = roundMark([
+      { x: m.x, y: m.y + 150 },
+      { x: m.x + 80, y: m.y + 80 },
+      { x: m.x + 12, y: m.y + 10 },
+      { x: m.x - 120, y: m.y - 90 },
+      { x: m.x - 220, y: m.y - 120 }
+    ]);
+
+    expect(boat.legIndex).toBe(0);
+    expect(boat.penaltyCount).toBe(1);
+    expect(boat.penaltyUntilMs).toBeGreaterThan(0);
+    expect(events.some((e) => e.kind === "rule" && e.message.includes("碰到"))).toBe(true);
+  });
+
+  it("does not penalize a boat for touching only the yellow outer ring", () => {
+    const m = mark.position;
+    const { boat, events } = roundMark([
+      { x: m.x, y: m.y + 150 },
+      { x: m.x + 48, y: m.y + 20 },
+      { x: m.x + 120, y: m.y - 90 },
+      { x: m.x + 220, y: m.y - 120 }
+    ]);
+
+    expect(boat.penaltyCount).toBe(0);
+    expect(events.some((e) => e.kind === "rule" && e.message.includes("碰到"))).toBe(false);
   });
 
   it("does not advance when the boat passes the mark on the wrong side", () => {

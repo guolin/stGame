@@ -2386,6 +2386,11 @@ input {
   font-size: 15px;
 }
 
+.intro-pager.hide-focus .tv-focused {
+  outline: none;
+  box-shadow: none;
+}
+
 .intro-slide .intro-body {
   margin: 4px 0;
 }

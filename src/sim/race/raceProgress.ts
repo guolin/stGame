@@ -19,9 +19,11 @@ export type RaceProgressResult = {
 
 /** Radius around a mark inside which the rounding sweep is tracked. */
 const ROUNDING_TRACK_RADIUS = 170;
+const MARK_TOUCH_RADIUS = 23;
 /** Minimal bearing sweep that proves the boat passed the mark on the required side. */
 const ROUNDING_PASS_SWEEP_DEG = 45;
 const BOW_OFFSET_PX = 48;
+const MARK_TOUCH_PENALTY_MS = 3000;
 
 export function updateBoatRace({ boat, prevPosition, course, elapsedMs, startSignal }: RaceProgressInput): RaceProgressResult {
   const events: RaceEvent[] = [];
@@ -63,19 +65,55 @@ export function updateBoatRace({ boat, prevPosition, course, elapsedMs, startSig
     const mark = target.mark;
     const dist = distance(next.position, mark.position);
 
+    if (dist <= MARK_TOUCH_RADIUS) {
+      const alreadyPenalized = Boolean(next.penaltyUntilMs && next.penaltyUntilMs > elapsedMs);
+      next = {
+        ...next,
+        markSweepDeg: 0,
+        lastMarkBearingDeg: undefined,
+        markEntrySide: undefined,
+        touchedMarkId: mark.id
+      };
+      if (!alreadyPenalized) {
+        next = {
+          ...next,
+          speed: next.speed * 0.25,
+          penaltyCount: next.penaltyCount + 1,
+          penaltyUntilMs: elapsedMs + MARK_TOUCH_PENALTY_MS
+        };
+        emit("rule", `${boat.name} 碰到 ${mark.label}，绕标不算，需重新按规定一侧绕标`);
+      }
+      return { boat: next, events };
+    }
+
     if (dist <= ROUNDING_TRACK_RADIUS) {
       const bearing = bearingDeg(mark.position, next.position);
       const lastBearing = next.lastMarkBearingDeg;
       const delta = lastBearing === undefined ? 0 : signedAngleDelta(lastBearing, bearing);
-      next = { ...next, markSweepDeg: next.markSweepDeg + delta, lastMarkBearingDeg: bearing };
+      next = {
+        ...next,
+        markSweepDeg: next.markSweepDeg + delta,
+        lastMarkBearingDeg: bearing,
+        markEntrySide: next.markEntrySide ?? sideOfMark(next.position, mark.position),
+        touchedMarkId: next.touchedMarkId === mark.id ? mark.id : undefined
+      };
     } else if (next.lastMarkBearingDeg !== undefined) {
       const requiredSign = mark.rounding === "port" ? -1 : 1;
-      const rounded = next.markSweepDeg * requiredSign >= ROUNDING_PASS_SWEEP_DEG;
+      const exitedLeft = sideOfMark(next.position, mark.position) === "left";
+      const enteredRight = next.markEntrySide === "right";
+      const rounded = enteredRight && exitedLeft && next.markSweepDeg * requiredSign >= ROUNDING_PASS_SWEEP_DEG && next.touchedMarkId !== mark.id;
       if (rounded) {
-        next = { ...next, legIndex: next.legIndex + 1, markSweepDeg: 0, lastMarkBearingDeg: undefined };
+        next = {
+          ...next,
+          legIndex: next.legIndex + 1,
+          markSweepDeg: 0,
+          lastMarkBearingDeg: undefined,
+          markEntrySide: undefined,
+          touchedMarkId: undefined
+        };
         emit("mark", `${boat.name} 绕过 ${mark.label}`);
       } else {
-        next = { ...next, markSweepDeg: 0, lastMarkBearingDeg: undefined };
+        next = { ...next, markSweepDeg: 0, lastMarkBearingDeg: undefined, markEntrySide: undefined, touchedMarkId: undefined };
       }
     }
     return { boat: next, events };
@@ -96,6 +134,10 @@ function bowPosition(boat: BoatState, position = boat.position): Vec2 {
     x: position.x + forward.x * BOW_OFFSET_PX,
     y: position.y + forward.y * BOW_OFFSET_PX
   };
+}
+
+function sideOfMark(position: Vec2, mark: Vec2): "left" | "right" {
+  return position.x < mark.x ? "left" : "right";
 }
 
 /** Course side is above the line (marks are upwind of the start). */

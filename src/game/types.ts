@@ -29,6 +29,8 @@ export type BoatState = {
   /** Accumulated bearing sweep (deg) around the current target mark; sign encodes direction. */
   markSweepDeg: number;
   lastMarkBearingDeg?: number;
+  markEntrySide?: "left" | "right";
+  touchedMarkId?: string;
   tackCount: number;
   penaltyCount: number;
   penaltyUntilMs?: number;
