@@ -37,24 +37,22 @@ export function updateBoatRace({ boat, prevPosition, course, elapsedMs, startSig
     events.push({ id: `${kind}-${boat.id}-${Math.round(elapsedMs)}`, timeMs: elapsedMs, kind, boatId: boat.id, message });
   };
 
-  // --- starting signal: anyone on the course side is OCS ---
-  if (startSignal && next.startStatus === "prestart" && isOnCourseSide(bow, course.startLine)) {
-    next = { ...next, startStatus: "ocs" };
-    emit("ocs", `${boat.name} 抢航（OCS），必须回到起航线后重新起航`);
+  // --- start state machine ---
+  if (next.startStatus === "prestart") {
+    if (startSignal && !isEntireHullOnPrestartSide(next, course.startLine)) {
+      next = { ...next, startStatus: "ocs" };
+      emit("ocs", `${boat.name} 抢航（OCS），必须回到起航线后重新起航`);
+    } else if (!startSignal && crossesLineUpward(prevBow, bow, course.startLine)) {
+      next = { ...next, startStatus: "started" };
+      emit("start", `${boat.name} 起航`);
+    }
+    return { boat: next, events };
   }
 
   if (next.startStatus === "ocs") {
     if (isEntireHullOnPrestartSide(next, course.startLine)) {
       next = { ...next, startStatus: "prestart" };
       emit("ocs-cleared", `${boat.name} 已回到起航线后，可以重新起航`);
-    }
-    return { boat: next, events };
-  }
-
-  if (next.startStatus === "prestart") {
-    if (!startSignal && crossesLineUpward(prevBow, bow, course.startLine)) {
-      next = { ...next, startStatus: "started" };
-      emit("start", `${boat.name} 起航`);
     }
     return { boat: next, events };
   }
@@ -125,7 +123,7 @@ export function updateBoatRace({ boat, prevPosition, course, elapsedMs, startSig
   }
 
   // --- final leg: finish crossing ---
-  if (isOnFinalLeg(course, next.legIndex) && crossesLine(prevPosition, next.position, course.finishLine)) {
+  if (isOnFinalLeg(course, next.legIndex) && crossesLineDownward(prevBow, bow, course.finishLine)) {
     next = { ...next, finished: true };
     emit("finish", `${boat.name} 冲过终点`);
   }
@@ -159,16 +157,12 @@ function hullPoints(boat: BoatState): Vec2[] {
 }
 
 function isEntireHullOnPrestartSide(boat: BoatState, line: LineSegment): boolean {
-  return hullPoints(boat).every((point) => !isOnCourseSide(point, line));
+  const y = lineYAt(line);
+  return hullPoints(boat).every((point) => point.y > y);
 }
 
 function sideOfMark(position: Vec2, mark: Vec2): "left" | "right" {
   return position.x < mark.x ? "left" : "right";
-}
-
-/** Course side is above the line (marks are upwind of the start). */
-function isOnCourseSide(position: Vec2, line: LineSegment): boolean {
-  return position.y < lineYAt(line);
 }
 
 function lineYAt(line: LineSegment): number {
@@ -189,10 +183,6 @@ function crossesLineUpward(prev: Vec2, pos: Vec2, line: LineSegment): boolean {
 function crossesLineDownward(prev: Vec2, pos: Vec2, line: LineSegment): boolean {
   const y = lineYAt(line);
   return prev.y <= y && pos.y > y && withinLineSpan(pos, line);
-}
-
-function crossesLine(prev: Vec2, pos: Vec2, line: LineSegment): boolean {
-  return (crossesLineUpward(prev, pos, line) || crossesLineDownward(prev, pos, line)) && withinLineSpan(pos, line);
 }
 
 function bearingDeg(from: Vec2, to: Vec2): number {

@@ -36,11 +36,18 @@ function makeBoat(overrides: Partial<BoatState> = {}): BoatState {
 }
 
 describe("start legality", () => {
-  it("flags a boat as OCS if its bow is on the course side at the starting signal", () => {
+  it("flags a boat as OCS at the starting signal unless the full hull is below the line", () => {
     const boat = makeBoat({ position: { x: midX, y: lineY + 30 }, headingDeg: 0 });
     const result = updateBoatRace({ boat, prevPosition: boat.position, course, elapsedMs: 0, startSignal: true });
     expect(result.boat.startStatus).toBe("ocs");
     expect(result.events.some((e) => e.kind === "ocs")).toBe(true);
+  });
+
+  it("does not start on the starting signal tick when the boat is fully below the line", () => {
+    const boat = makeBoat({ position: { x: midX, y: lineY + 80 }, headingDeg: 0 });
+    const result = updateBoatRace({ boat, prevPosition: { x: midX, y: lineY + 100 }, course, elapsedMs: 0, startSignal: true });
+    expect(result.boat.startStatus).toBe("prestart");
+    expect(result.events).toEqual([]);
   });
 
   it("starts a boat when its bow crosses the line from the pre-start side after the signal", () => {
@@ -78,6 +85,13 @@ describe("start legality", () => {
     const result = updateBoatRace({ boat: ocsBoat, prevPosition: { x: midX, y: lineY - 80 }, course, elapsedMs: 2000, startSignal: false });
     expect(result.boat.startStatus).toBe("ocs");
     expect(result.events.some((e) => e.kind === "ocs-cleared")).toBe(false);
+  });
+
+  it("does not start an OCS boat before the full hull returns below the line", () => {
+    const ocsBoat = makeBoat({ startStatus: "ocs", position: { x: midX, y: lineY + 40 }, headingDeg: 0 });
+    const result = updateBoatRace({ boat: ocsBoat, prevPosition: { x: midX, y: lineY + 60 }, course, elapsedMs: 2500, startSignal: false });
+    expect(result.boat.startStatus).toBe("ocs");
+    expect(result.events.some((e) => e.kind === "start")).toBe(false);
   });
 
   it("does not advance legs before a legal start", () => {
@@ -191,11 +205,25 @@ describe("finish", () => {
     const boat = makeBoat({
       startStatus: "started",
       legIndex: course.legMarkIds.length,
-      position: { x: midX, y: finishY + 5 }
+      position: { x: midX, y: finishY - 40 },
+      headingDeg: 180
     });
-    const result = updateBoatRace({ boat, prevPosition: { x: midX, y: finishY - 5 }, course, elapsedMs: 90_000, startSignal: false });
+    const result = updateBoatRace({ boat, prevPosition: { x: midX, y: finishY - 60 }, course, elapsedMs: 90_000, startSignal: false });
+    expect(boat.position.y).toBeLessThan(finishY);
     expect(result.boat.finished).toBe(true);
     expect(result.events.some((e) => e.kind === "finish")).toBe(true);
+  });
+
+  it("does not finish when crossing the finish line from bottom to top", () => {
+    const boat = makeBoat({
+      startStatus: "started",
+      legIndex: course.legMarkIds.length,
+      position: { x: midX, y: finishY + 40 },
+      headingDeg: 0
+    });
+    const result = updateBoatRace({ boat, prevPosition: { x: midX, y: finishY + 60 }, course, elapsedMs: 90_000, startSignal: false });
+    expect(result.boat.finished).toBe(false);
+    expect(result.events.some((e) => e.kind === "finish")).toBe(false);
   });
 
   it("does not finish a boat that has not rounded all marks", () => {

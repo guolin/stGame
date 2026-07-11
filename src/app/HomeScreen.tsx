@@ -126,7 +126,7 @@ export function HomeScreen() {
               <div className="about-role-grid" aria-label="团队分工">
                 <article>
                   <strong>软件研发</strong>
-                  <span>袁嘉佑（Pai） · 陈新宇 · Charan</span>
+                  <span>袁嘉佑（Pai） · Max · Charan</span>
                 </article>
                 <article>
                   <strong>硬件与视觉</strong>
