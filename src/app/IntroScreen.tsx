@@ -17,6 +17,7 @@ import { ComicSeekPanel } from "./intro/ComicPanels";
 import { IntroVideoPanel } from "./intro/VideoPanel";
 import { LadderLayer } from "./intro/LadderLayer";
 import { RudderGauge } from "./intro/RudderGauge";
+import { FocusableButton } from "./navigation/FocusableButton";
 import type { DemoBoat, DuelState, RaceRecording } from "./intro/introDemoSim";
 import {
   DEMO_MARK,
@@ -138,6 +139,7 @@ export function IntroScreen() {
   const setView = useGameStore((state) => state.setView);
   const [slide, setSlide] = useState(0);
   const [frame, setFrame] = useState(0);
+  const [hidePagerFocus, setHidePagerFocus] = useState(false);
 
   const recordingRef = useRef<RaceRecording | null>(null);
   if (!recordingRef.current) recordingRef.current = recordIntroRace();
@@ -176,6 +178,7 @@ export function IntroScreen() {
 
   const goTo = (index: number) => {
     if (index < 0 || index >= SLIDES.length) return;
+    setHidePagerFocus(slide === SLIDES.length - 1 && index < SLIDES.length - 1);
     if (index === DARK_SLIDE || index === REPLAY_SLIDE) playheadRef.current = 0;
     if (index === DUEL_SLIDE) {
       duelRef.current = createDuelState();
@@ -226,13 +229,13 @@ export function IntroScreen() {
   }, []);
 
   const pager = (
-    <div className="intro-pager">
-      <button type="button" onClick={() => goTo(slide - 1)} disabled={slide === 0} aria-label="上一页">
+    <div className={`intro-pager ${hidePagerFocus ? "hide-focus" : ""}`}>
+      <FocusableButton type="button" onClick={() => goTo(slide - 1)} disabled={slide === 0} aria-label="上一页">
         ‹
-      </button>
+      </FocusableButton>
       <div className="intro-dots">
         {SLIDES.map((item, index) => (
-          <button
+          <FocusableButton
             key={`${item.kind}-${index}`}
             type="button"
             className={index === slide ? "active" : ""}
@@ -241,12 +244,17 @@ export function IntroScreen() {
           />
         ))}
       </div>
-      <button type="button" onClick={() => goTo(slide + 1)} disabled={slide === SLIDES.length - 1} aria-label="下一页">
+      <FocusableButton
+        type="button"
+        onClick={() => goTo(slide + 1)}
+        disabled={slide === SLIDES.length - 1}
+        aria-label="下一页"
+      >
         ›
-      </button>
-      <button type="button" className="intro-exit" onClick={() => setView("home")}>
+      </FocusableButton>
+      <FocusableButton type="button" className="intro-exit" onClick={() => setView("home")} autoFocus={slide === SLIDES.length - 1}>
         {slide === SLIDES.length - 1 ? "返回首页" : "退出"}
-      </button>
+      </FocusableButton>
     </div>
   );
 
