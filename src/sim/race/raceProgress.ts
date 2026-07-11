@@ -99,9 +99,12 @@ export function updateBoatRace({ boat, prevPosition, course, elapsedMs, startSig
       };
     } else if (next.lastMarkBearingDeg !== undefined) {
       const requiredSign = mark.rounding === "port" ? -1 : 1;
-      const exitedLeft = sideOfMark(next.position, mark.position) === "left";
-      const enteredRight = next.markEntrySide === "right";
-      const rounded = enteredRight && exitedLeft && next.markSweepDeg * requiredSign >= ROUNDING_PASS_SWEEP_DEG && next.touchedMarkId !== mark.id;
+      const expectedEntrySide = mark.rounding === "starboard" ? "left" : "right";
+      const expectedExitSide = mark.rounding === "starboard" ? "right" : "left";
+      const exitedRequiredSide = sideOfMark(next.position, mark.position) === expectedExitSide;
+      const enteredRequiredSide = next.markEntrySide === expectedEntrySide;
+      const rounded =
+        enteredRequiredSide && exitedRequiredSide && next.markSweepDeg * requiredSign >= ROUNDING_PASS_SWEEP_DEG && next.touchedMarkId !== mark.id;
       if (rounded) {
         next = {
           ...next,
