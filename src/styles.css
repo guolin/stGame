@@ -2298,6 +2298,15 @@ input {
   color: #ffe082;
 }
 
+.autopilot-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffe082;
+  border: 2px solid rgba(4, 22, 36, 0.82);
+  box-shadow: 0 0 0 4px rgba(255, 224, 130, 0.22), 0 0 18px rgba(255, 224, 130, 0.62);
+}
+
 .hud-chip-red {
   border-color: #ff533d;
   color: #ffb4a8;
