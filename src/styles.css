@@ -425,6 +425,16 @@ input {
   font-weight: 900;
 }
 
+.rudder-demo-home-button {
+  min-height: 44px;
+  padding: 0 22px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 999px;
+  background: #02070c;
+  color: #ffffff;
+  font-weight: 900;
+}
+
 .rudder-demo-stage {
   min-width: 0;
   min-height: 0;

@@ -167,7 +167,7 @@ function RudderDemoDialog({ onClose }: { onClose: () => void }) {
             <span>输入 {Math.round(demo.axis)}</span>
             <span>舵量 {Math.round(demo.rudder * 100)}%</span>
           </div>
-          <FocusableButton type="button" className="accent" onClick={onClose} autoFocus>
+          <FocusableButton type="button" className="rudder-demo-home-button" onClick={onClose} autoFocus>
             返回主页
           </FocusableButton>
         </header>
